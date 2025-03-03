@@ -42,19 +42,4 @@
         android:src="@drawable/knife2"
         android:visibility="invisible" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="220dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginStart="103dp"
-        android:layout_marginEnd="86dp"
-        android:layout_marginBottom="295dp"
-        android:text="AI-Powered Cooking, Simplified"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold"
-        android:typeface="sans" />
-
 </RelativeLayout>
