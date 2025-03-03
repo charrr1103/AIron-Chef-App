@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_bg">
+
+    <!-- Centered Logo -->
+
+    <!-- Flying Knives (Initial Position) -->
+
+    <ImageView
+        android:id="@+id/logo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:src="@drawable/airon_chef_logo" />
+
+    <ImageView
+        android:id="@+id/knife1"
+        android:layout_width="47dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="187dp"
+        android:layout_marginTop="389dp"
+        android:layout_marginBottom="291dp"
+        android:src="@drawable/knife1"
+        android:visibility="invisible" />
+
+    <ImageView
+        android:id="@+id/knife2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="178dp"
+        android:layout_marginTop="387dp"
+        android:layout_marginEnd="187dp"
+        android:layout_marginBottom="290dp"
+        android:src="@drawable/knife2"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="103dp"
+        android:layout_marginEnd="86dp"
+        android:layout_marginBottom="295dp"
+        android:text="AI-Powered Cooking, Simplified"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:typeface="sans" />
+
+</RelativeLayout>
