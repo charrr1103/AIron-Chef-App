@@ -5,41 +5,36 @@
     android:background="@drawable/gradient_bg">
 
     <!-- Centered Logo -->
-
-    <!-- Flying Knives (Initial Position) -->
-
     <ImageView
         android:id="@+id/logo"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
         android:src="@drawable/airon_chef_logo" />
 
+    <!-- Flying Knives (Initial Position) -->
     <ImageView
         android:id="@+id/knife1"
-        android:layout_width="47dp"
+        android:layout_width="45dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="187dp"
-        android:layout_marginTop="389dp"
-        android:layout_marginBottom="291dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="160dp"
+        android:layout_marginBottom="76dp"
         android:src="@drawable/knife1"
-        android:visibility="invisible" />
+        android:visibility="visible" />
 
     <ImageView
         android:id="@+id/knife2"
-        android:layout_width="wrap_content"
+        android:layout_width="45dp"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="178dp"
-        android:layout_marginTop="387dp"
-        android:layout_marginEnd="187dp"
-        android:layout_marginBottom="290dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="160dp"
+        android:layout_marginBottom="76dp"
         android:src="@drawable/knife2"
-        android:visibility="invisible" />
+        android:visibility="visible" />
 
 </RelativeLayout>
