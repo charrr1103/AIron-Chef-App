@@ -1,1 +1,2 @@
 - Splash Screen (Completed)
+- App Icon (Completed)
