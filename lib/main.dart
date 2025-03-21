@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ Custom Splash Screen with Gradient Background
+// Custom Splash Screen with Gradient Background
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -53,14 +53,13 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
         child: Center(
-          child: Image.asset("assets/logo.png", width: 270), // Your logo
+          child: Image.asset("assets/logo.png", width: 270), //AIron Chef logo
         ),
       ),
     );
   }
 }
 
-// ✅ Replace with your actual home screen
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
