@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ Custom Splash Screen with Gradient Background
+// Custom Splash Screen with Gradient Background
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => OnboardingScreen()), // ✅ Navigate to OnboardingScreen
+        MaterialPageRoute(builder: (context) => const OnboardingScreen()), // ✅ Navigate to OnboardingScreen
       );
     });
   }
@@ -57,6 +57,18 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Image.asset("assets/logo.png", width: 270), // AIron Chef logo
         ),
       ),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Home")),
+      body: const Center(child: Text("Welcome to AIron Chef!")),
     );
   }
 }
