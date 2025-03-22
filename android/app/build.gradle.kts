@@ -6,6 +6,8 @@ plugins {
 }
 
 android {
+    ndkVersion = "27.0.12077973"
+
     namespace = "com.example.airon_chef"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
