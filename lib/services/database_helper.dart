@@ -4,7 +4,6 @@ import 'package:sqflite/sqflite.dart';
 import 'package:flutter/foundation.dart';
 import '../pages/shopping_list.dart';
 import '../pages/shopping_ingredient.dart';
-import '../widgets/pantry_item.dart';
 import 'dart:convert';
 
 class DatabaseHelper {
@@ -105,12 +104,10 @@ class DatabaseHelper {
     }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  // Insert PantryItem (safe version, ignore isSelected)
+  // Insert PantryItem
   Future<int> insertPantryItem(PantryItem item) async {
     final db = await database;
-    return await db.insert(
-      'pantry',
-      {
+    return await db.insert(_tablePantry,{
         'name': item.name,
         'quantity': item.quantity,
         'category': item.category,
@@ -127,26 +124,23 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query(_tablePantry);
 
     return List.generate(maps.length, (i) {
-      return PantryItem.fromMap(maps[i]);  // 🛠 only this!
+      return PantryItem.fromMap(maps[i]); 
     });
   }
 
   // Delete an ingredient by name
   Future<int> deleteIngredient(String name) async {
     final db = await database;
-    return await db.delete(
-      'pantry',
+    return await db.delete(_tablePantry,
       where: 'name = ?',
       whereArgs: [name],
     );
   }
 
-  // Insert or update ShoppingList
+  // Insert/update shopping list
   Future<int> insertShoppingList(ShoppingList list) async {
     final db = await database;
-    return await db.insert(
-      _tableShoppingLists,
-      {
+    return await db.insert(_tableShoppingLists,{
         'title': list.title,
         'ingredients': json.encode(list.ingredients.map((e) => e.toJson()).toList()),
       },
@@ -154,32 +148,25 @@ class DatabaseHelper {
     );
   }
 
-
   // Get all shopping lists
   Future<List<ShoppingList>> getAllShoppingLists() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(_tableShoppingLists);
-
     return List.generate(maps.length, (i) {
       return ShoppingList(
-        id: maps[i]['id'] as int?, // <-- add this!
+        id: maps[i]['id'] as int?, 
         title: maps[i]['title'] as String,
-        ingredients: (json.decode(maps[i]['ingredients']) as List)
-            .map((e) => ShoppingIngredient.fromJson(e as Map<String, dynamic>))
-            .toList(),
+        ingredients: (json.decode(maps[i]['ingredients']) as List).map((e) => ShoppingIngredient.fromJson(e as Map<String, dynamic>)).toList(),
       );
     });
   }
 
-
   // Delete shopping list by title
   Future<int> deleteShoppingList(String title) async {
     final db = await database;
-    return await db.delete(
-      _tableShoppingLists,
+    return await db.delete(_tableShoppingLists,
       where: 'title = ?',
       whereArgs: [title],
     );
   }
-
 }
