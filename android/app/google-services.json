@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "792704153211",
+    "firebase_url": "https://airon-chef-c51ad-default-rtdb.firebaseio.com",
+    "project_id": "airon-chef-c51ad",
+    "storage_bucket": "airon-chef-c51ad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792704153211:android:24b2072392bd6e599114de",
+        "android_client_info": {
+          "package_name": "com.example.airon_chef"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "792704153211-266g8g33jj5pjqmpmarp7ngthlc24d99.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtpbk8SQVUalYLn6Ji4f59EaY4Hry-jHA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "792704153211-266g8g33jj5pjqmpmarp7ngthlc24d99.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
