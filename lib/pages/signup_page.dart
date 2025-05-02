@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:ui';
-import './home.dart';
+import './home.dart'; // Import your home.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -20,15 +22,18 @@ class _SignUpPageState extends State<SignUpPage> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
   bool _showSuccessOverlay = false;
+
+  // Error messages for each field
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      key: _scaffoldMessengerKey,
       body: Stack(
         children: [
           // Gradient background
@@ -65,24 +70,33 @@ class _SignUpPageState extends State<SignUpPage> {
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                    ),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
                   ),
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildTextField(hintText: 'Email', controller: _emailController),
+                        _buildTextField(
+                          hintText: 'Email',
+                          controller: _emailController,
+                          errorText: _emailError,
+                        ),
                         const SizedBox(height: 16),
-                        _buildTextField(hintText: 'Full Name', controller: _nameController),
+                        _buildTextField(
+                          hintText: 'Full Name',
+                          controller: _nameController,
+                        ),
                         const SizedBox(height: 16),
-                        _buildTextField(hintText: 'Username', controller: _usernameController),
+                        _buildTextField(
+                          hintText: 'Username',
+                          controller: _usernameController,
+                        ),
                         const SizedBox(height: 16),
                         _buildTextField(
                           hintText: 'Password',
                           obscureText: _obscurePassword,
                           isPasswordField: true,
                           controller: _passwordController,
+                          errorText: _passwordError,
                           onToggle: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;
@@ -95,6 +109,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           obscureText: _obscureConfirmPassword,
                           isPasswordField: true,
                           controller: _confirmPasswordController,
+                          errorText: _confirmPasswordError,
                           onToggle: () {
                             setState(() {
                               _obscureConfirmPassword = !_obscureConfirmPassword;
@@ -120,13 +135,15 @@ class _SignUpPageState extends State<SignUpPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              "Have an account? ",
-                              style: TextStyle(fontSize: 16),
-                            ),
+                            const Text("Have an account? ", style: TextStyle(fontSize: 16)),
                             GestureDetector(
                               onTap: () {
-                                // TODO: Implement navigation to login page
+                                //  Navigate to login page.
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginPage(), // Use the LoginPage
+                                  ),
+                                );
                               },
                               child: const Text(
                                 "Login",
@@ -153,10 +170,7 @@ class _SignUpPageState extends State<SignUpPage> {
             right: 0,
             child: Column(
               children: [
-                Image.asset(
-                  'assets/signupImg.png',
-                  height: 120,
-                ),
+                Image.asset('assets/signupImg.png', height: 120),
                 const SizedBox(height: 5),
                 const Text(
                   "Let's get started",
@@ -175,31 +189,20 @@ class _SignUpPageState extends State<SignUpPage> {
             Positioned.fill(
               child: Container(
                 color: const Color(0xFFCB6CE6).withOpacity(0.8),
-                child:  Center(
+                child: const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.check_circle_outline,
-                        size: 50,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(height: 10),
+                      Icon(Icons.check_circle_outline, size: 50, color: Colors.white),
+                      SizedBox(height: 10),
                       Text(
                         'Account Created!',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
-                      const SizedBox(height: 5),
-                      const Text(
+                      SizedBox(height: 5),
+                      Text(
                         'Welcome to Iron Chef',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ],
                   ),
@@ -213,137 +216,118 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // Sign up function
   void signUpUser() async {
-    if (_passwordController.text == _confirmPasswordController.text) {
-      try {
-        // Attempt to create user with Firebase Auth
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+    setState(() {
+      _emailError = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+    });
 
-        // Handle success: Show light purple overlay
-        print('User signed up: ${userCredential.user?.email}');
-        setState(() {
-          _showSuccessOverlay = true;
-        });
-
-        // Navigate to the home screen after the overlay is shown (with a delay)
-        Future.delayed(const Duration(seconds: 3), () {
-          setState(() {
-            _showSuccessOverlay = false;
-          });
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => WillPopScope(
-                // Wrap HomeScreen with WillPopScope
-                onWillPop: () async {
-                  // Override the back button behavior
-                  exit(0); // Quit the app
-                  return false; // Prevent default back button behavior
-                },
-                child: HomeScreen(), // Your Home Screen Widget
-              ),
-            ),
-          );
-        });
-      } on FirebaseAuthException catch (e) {
-        // Handle error: Show error message
-        if (e.code == 'email-already-in-use') {
-          _showErrorDialog(
-            title: 'Email Already Exists',
-            message: 'The email address is already in use by another account.',
-          );
-        } else {
-          _showErrorDialog(
-            title: 'Sign Up Error',
-            message: 'Error creating account: ${e.message}',
-          );
-        }
-        print("Error: ${e.message}");
-      }
-    } else {
-      // Passwords do not match
-      _showErrorDialog(
-        title: 'Password Mismatch',
-        message: 'Passwords do not match.',
-      );
-      print("Passwords do not match");
+    if (_passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _confirmPasswordError = 'Passwords do not match.';
+      });
+      return;
     }
-  }
 
-  // Function to show an error dialog
-  void _showErrorDialog({required String title, required String message}) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF19006D), // Consistent with button color
-            ),
-          ),
-          content: Text(
-            message,
-            style: const TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
+    try {
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      print('User signed up: ${userCredential.user?.email}');
+      setState(() {
+        _showSuccessOverlay = true;
+      });
+
+      Future.delayed(const Duration(seconds: 3), () {
+        setState(() {
+          _showSuccessOverlay = false;
+        });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WillPopScope(
+              onWillPop: () async {
+                exit(0);
               },
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF4169E1), // Style the button color
-              ),
-              child: const Text('OK'),
+              child: const HomeScreen(),
             ),
-          ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15), // Rounded border
           ),
-          backgroundColor: Colors.white, // Background color
         );
-      },
-    );
+      });
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        setState(() {
+          _emailError = 'The email is already in use.';
+        });
+      } else if (e.code == 'invalid-email') {
+        setState(() {
+          _emailError = 'Please enter a valid email.';
+        });
+      } else if (e.code == 'weak-password') {
+        setState(() {
+          _passwordError = 'Password is too weak.';
+        });
+      } else {
+        setState(() {
+          _emailError = 'Error: ${e.message}';
+        });
+      }
+    }
   }
 
   Widget _buildTextField({
     required String hintText,
+    required TextEditingController controller,
     bool obscureText = false,
     bool isPasswordField = false,
+    String? errorText,
     VoidCallback? onToggle,
-    required TextEditingController controller,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      decoration: InputDecoration(
-        hintText: hintText,
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.8),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        suffixIcon: isPasswordField
-            ? IconButton(
-          icon: Icon(
-            obscureText ? Icons.visibility_off : Icons.visibility,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          decoration: InputDecoration(
+            hintText: hintText,
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.8),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            suffixIcon: isPasswordField
+                ? IconButton(
+              icon: Icon(
+                obscureText ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: onToggle,
+            )
+                : null,
+            enabledBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.blue),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.red),
+              borderRadius: BorderRadius.circular(15),
+            ),
           ),
-          onPressed: onToggle,
-        )
-            : null,
-        enabledBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.grey),
-          borderRadius: BorderRadius.circular(15),
+          style: const TextStyle(fontSize: 18),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.blue),
-          borderRadius: BorderRadius.circular(15),
-        ),
-      ),
-      style: const TextStyle(fontSize: 18),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, left: 8),
+            child: Text(
+              errorText,
+              style: const TextStyle(color: Colors.red, fontSize: 14),
+            ),
+          ),
+      ],
     );
   }
 }
-

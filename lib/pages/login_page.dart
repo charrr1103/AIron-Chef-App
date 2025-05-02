@@ -1,14 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import './home.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -24,22 +29,198 @@ class MyApp extends StatelessWidget {
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
-
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoading = false;
+  String _errorMessage = '';
+// Function to handle login
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      final String email = _emailController.text.trim();
+      final String password = _passwordController.text.trim();
+      if (email.isEmpty || password.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "Please enter both email and password.";
+        });
+        return;
+      }
+      final UserCredential userCredential =
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      if (userCredential.user != null) {
+        _saveLoginState();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+        switch (e.code) {
+          case 'user-not-found':
+            _errorMessage = "No user found for that email.";
+            break;
+          case 'wrong-password':
+            _errorMessage = "Incorrect password.";
+            break;
+          case 'invalid-email':
+            _errorMessage = "Invalid email address.";
+            break;
+          case 'user-disabled':
+            _errorMessage = "This account has been disabled.";
+            break;
+          default:
+            _errorMessage = "An error occurred: ${e.message}";
+            break;
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "An unexpected error occurred: $e";
+      });
+    }
+  }
+// Function for Google Sign-In
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = "Google Sign-In was cancelled by the user.";
+        });
+        return;
+      }
+      final GoogleSignInAuthentication googleAuth =
+      await googleUser.authentication;
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final UserCredential userCredential =
+      await _auth.signInWithCredential(credential);
+      if (userCredential.user != null) {
+        _saveLoginState();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Google Sign-In Failed: ${e.message}";
+      });
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = "Error during Google Sign-In: $error";
+      });
+    }
+  }
+// Function for Facebook Login - DEACTIVATED
+// Future<void> _signInWithFacebook() async {
+// setState(() {
+// _isLoading = true;
+// _errorMessage = '';
+// });
+// try {
+// final LoginResult result = await FacebookAuth.instance.login(
+// permissions: ['email'],
+// );
+//
+// if (result.status != LoginStatus.success) {
+// setState(() {
+// _isLoading = false;
+// _errorMessage =
+// "Facebook Sign-In failed: ${result.message ?? 'Unknown error'}";
+// });
+// return;
+// }
+//
+// final OAuthCredential credential = FacebookAuthProvider.credential(
+// accessToken: result.accessToken!.token,
+// );
+//
+//
+// final UserCredential userCredential =
+// await _auth.signInWithCredential(credential);
+//
+// if (userCredential.user != null) {
+// _saveLoginState();
+// Navigator.pushReplacement(
+// context,
+// MaterialPageRoute(builder: (context) => const HomeScreen()),
+// );
+// }
+// } on FirebaseAuthException catch (e) {
+// setState(() {
+// _isLoading = false;
+// _errorMessage = "Facebook Sign In Failed: ${e.message}";
+// });
+// } catch (error) {
+// setState(() {
+// _isLoading = false;
+// _errorMessage = "Error during Facebook Sign In: $error";
+// });
+// }
+// }
+// Function to save login state
+  Future<void> _saveLoginState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
+  }
+// Function to check login state
+  Future<bool> _isLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('isLoggedIn') ?? false;
+  }
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginState();
+  }
+  Future<void> _checkLoginState() async {
+    if (await _isLoggedIn()) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    }
+  }
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
     return Scaffold(
       body: Stack(
         children: [
-          // Gradient background
+// Gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -52,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          // Blurred white layer (glass effect)
+// Blurred white layer (glass effect)
           Positioned(
             top: size.height * 0.32,
             left: 0,
@@ -66,7 +247,8 @@ class _LoginPageState extends State<LoginPage> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.4),
                     borderRadius: const BorderRadius.only(
@@ -80,37 +262,55 @@ class _LoginPageState extends State<LoginPage> {
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildTextField(hintText: 'Username or Email'),
+                        _buildTextField(
+                          hintText: 'Email',
+                          controller: _emailController,
+                        ),
                         const SizedBox(height: 16),
                         _buildTextField(
                           hintText: 'Password',
                           obscureText: _obscurePassword,
                           isPasswordField: true,
+                          controller: _passwordController,
                           onToggle: () {
                             setState(() {
                               _obscurePassword = !_obscurePassword;
                             });
                           },
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 10),
+                        if (_errorMessage.isNotEmpty)
+                          Text(
+                            _errorMessage,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                            ),
+                          ),
+                        const SizedBox(height: 22),
                         ElevatedButton(
-                          onPressed: () {
-                            // TODO: Implement login functionality
-                          },
+                          onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF19006D),
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12, horizontal: 25),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
                           ),
-                          child: const Text(
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                            valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 3,
+                          )
+                              : const Text(
                             'Login',
-                            style: TextStyle(fontSize: 18, color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 18, color: Colors.white),
                           ),
                         ),
                         const SizedBox(height: 16),
-
                         Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -144,21 +344,24 @@ class _LoginPageState extends State<LoginPage> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                _buildSocialLoginButton('assets/socialmediaLogos/googleLogo.png'),
-                                const SizedBox(width: 20),
-                                _buildSocialLoginButton('assets/socialmediaLogos/facebookLogo.png'),
+                                _buildSocialLoginButton(
+                                    'assets/socialmediaLogos/googleLogo.png',
+                                    _signInWithGoogle),
+//const SizedBox(width: 20), DEACTIVATED Facebook Login
+//_buildSocialLoginButton(
+// 'assets/socialmediaLogos/facebookLogo.png',
+// _signInWithFacebook),
                               ],
                             ),
                           ],
                         ),
-
-
                         const SizedBox(height: 16),
                         TextButton(
                           onPressed: () {
-                            Navigator.push(
+                            Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                              MaterialPageRoute(
+                                  builder: (context) => const HomeScreen()),
                             );
                           },
                           child: const Text(
@@ -177,7 +380,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-          // Logo + Title
+// Logo + Title
           Positioned(
             top: size.height * 0.1,
             left: 0,
@@ -189,7 +392,8 @@ class _LoginPageState extends State<LoginPage> {
                   height: 150,
                 ),
                 Transform.translate(
-                  offset: const Offset(0, -20), // move the title upward by 10 pixels
+                  offset: const Offset(
+                      0, -20),
                   child: const Text(
                     "Welcome Back!",
                     textAlign: TextAlign.center,
@@ -207,14 +411,15 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
   Widget _buildTextField({
     required String hintText,
     bool obscureText = false,
     bool isPasswordField = false,
+    TextEditingController? controller,
     VoidCallback? onToggle,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,
@@ -241,11 +446,10 @@ class _LoginPageState extends State<LoginPage> {
       style: const TextStyle(fontSize: 18),
     );
   }
-
-  Widget _buildSocialLoginButton(String assetPath) {
+  Widget _buildSocialLoginButton(String assetPath, Function onTap) {
     return InkWell(
       onTap: () {
-        // TODO: Handle social login click
+        onTap();
       },
       child: Container(
         width: 50,
@@ -259,5 +463,5 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-
 }
+
