@@ -1,16 +1,14 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:http/http.dart' as http;
 import '../pages/shopping_list.dart';
 import '../pages/shopping_ingredient.dart';
-import '../services/ingredient_images_service.dart'; // ✅ make sure you have this service
+import '../services/ingredient_images_service.dart'; 
 
 class ShoppingListDetailPage extends StatefulWidget {
   final ShoppingList list;
@@ -25,22 +23,42 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   final GlobalKey _globalKey = GlobalKey();
   final imageService = IngredientImageService();
 
-  void _toggleBought(int index) {
+  // Change state to 'bought' when user select the checkbox
+  void _toggleBought(int index) { 
     setState(() {
       widget.list.ingredients[index].bought = !widget.list.ingredients[index].bought;
     });
   }
 
+  Future<String?> fetchUnsplashImage(String name) async {
+    final url = Uri.https('api.unsplash.com', '/search/photos', {
+      'query': '$name food',
+      'per_page': '1',
+      'orientation': 'squarish',
+      'client_id': 'BG_jaAJgeU7OwfFcInZyX0bO5OEov_kzVJfZYpHbqdE',
+    });
+    final resp = await http.get(url);
+    if (resp.statusCode == 403) return null;
+    if (resp.statusCode != 200) {
+      throw Exception('Unsplash error: ${resp.statusCode}');
+    }
+    final data = json.decode(resp.body);
+    final results = data['results'] as List;
+    return results.isNotEmpty ? results[0]['urls']['small'] as String : null;
+  }
+
+  // When image fail to load
   Widget _fallbackAsset(ShoppingIngredient item) {
     return Image.asset(
       'assets/ingredients/${item.name.toLowerCase().replaceAll(" ", "_")}.jpg',
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported), // Show image not support if the image not in assets
     );
   }
 
+  // Request storage permission before download the shopping list image
   Future<void> requestStoragePermission() async {
     if (Platform.isAndroid) {
       if (await Permission.manageExternalStorage.isGranted) {
@@ -51,12 +69,14 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
       final result = await Permission.manageExternalStorage.request();
       if (result.isGranted) {
         await _downloadAsImage();
-      } else if (result.isPermanentlyDenied) {
+      } 
+      else if (result.isPermanentlyDenied) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enable storage permission in settings.')),
+          const SnackBar(content: Text('Please enable storage permission in settings to download the image.')),
         );
         openAppSettings();
-      } else {
+      } 
+      else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Storage permission not granted.')),
         );
@@ -64,6 +84,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     }
   }
 
+  //Add ingredient dialog
   void _showAddIngredientDialog() {
     final controller = TextEditingController();
 
@@ -109,12 +130,14 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () {
-                      final name = controller.text.trim();
-                      if (name.isNotEmpty) {
+                      final name = controller.text.trim().split(' ').map((word) => word.isNotEmpty
+                        ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}' // Standadize to capitalize the first letter
+                        : '').join(' ');
+                      if (name.isNotEmpty) {//Check if user got input 
                         final alreadyExists = widget.list.ingredients.any(
-                          (ingredient) => ingredient.name.toLowerCase() == name.toLowerCase(),
+                          (ingredient) => ingredient.name.toLowerCase() == name.toLowerCase(), // Remove duplicates
                         );
-                        if (alreadyExists) {
+                        if (alreadyExists) {//Check if the ingredient already exits
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Ingredient already exists')),
                           );
@@ -144,13 +167,14 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     );
   }
 
+  //download the shopping list as image
   Future<void> _downloadAsImage() async {
     try {
       RenderRepaintBoundary boundary = _globalKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final image = await boundary.toImage(pixelRatio: 3.0); //higher image resolution
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png); // convert to byte data for saving or sharing purpose
 
-      if (byteData == null) {
+      if (byteData == null) { //fail to convert the image to byte data
         throw Exception("Failed to get byte data from image.");
       }
 
@@ -173,9 +197,9 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
   Future<void> _shareAsText() async {
     final text = widget.list.ingredients
-        .map((item) => '${item.bought ? '[x]' : '[ ]'} ${item.name}')
+        .map((item) => '${item.bought ? '[x]' : '[ ]'} ${item.name}')//those ingredients that bought will be represent as [x] in text
         .join('\n');
-    Share.share('🛒 ${widget.list.title}\n\n$text');
+    Share.share('🛒 ${widget.list.title}\n\n$text'); //native share dialog
   }
 
   @override
@@ -188,7 +212,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
             children: [
               const SizedBox(height: 12),
 
-              RepaintBoundary(
+              RepaintBoundary( //starting point to capture the widget
                 key: _globalKey,
                 child: Container(
                   color: const Color(0xFFFFFBF0),
@@ -226,7 +250,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
                       ListView.builder(
                         shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
+                        physics: const NeverScrollableScrollPhysics(), //avoid inner scrolling for list
                         itemCount: widget.list.ingredients.length,
                         itemBuilder: (context, index) {
                           final ingredient = widget.list.ingredients[index];

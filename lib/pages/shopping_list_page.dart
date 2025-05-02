@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:airon_chef/services/database_helper.dart';
 import '../pages/shopping_list.dart';
-import '../pages/shopping_ingredient.dart';
 import './pantry_page.dart';
-import './recipe_page.dart';
 import './all_recipe_page.dart';
 import 'profile_page.dart';
 import 'shopping_list_detail_page.dart';
@@ -24,14 +22,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> {
     _loadShoppingLists();
   }
 
-  Future<void> _loadShoppingLists() async {
-    final lists = await DatabaseHelper.instance.getAllShoppingLists();
-    setState(() {
-      shoppingLists = lists;
-    });
-  }
+Future<void> _loadShoppingLists() async {
+  final lists = await DatabaseHelper.instance.getAllShoppingLists();
+  setState(() {
+    // Ensure the latest list on the top
+    shoppingLists = lists.reversed.toList();
+  });
+}
 
 Future<void> _deleteList(int index) async {
+  // Delete comfirmation dialog
   final confirm = await showDialog<bool>(
     context: context,
     builder: (context) => Dialog(
@@ -76,18 +76,18 @@ Future<void> _deleteList(int index) async {
     ),
   );
 
+  // Reload the shopping lists after delete a list
   if (confirm == true) {
-    final title = shoppingLists[index].title;
+    final title = shoppingLists[index].title; // Find title index and delete the match one in db
     await DatabaseHelper.instance.deleteShoppingList(title);
     await _loadShoppingLists();
   }
 }
 
-
+// Edit list title dialog
 Future<void> _editListTitle(int index) async {
   final oldTitle = shoppingLists[index].title;
   final controller = TextEditingController(text: oldTitle);
-
   showDialog(
     context: context,
     builder: (context) => Dialog(
@@ -127,7 +127,7 @@ Future<void> _editListTitle(int index) async {
                   ),
                   onPressed: () async {
                     final newTitle = controller.text.trim();
-                    if (newTitle.isNotEmpty && newTitle != oldTitle) {
+                    if (newTitle.isNotEmpty && newTitle != oldTitle) {//update the title if it is not empty or same as old title
                       final updatedList = ShoppingList(
                         title: newTitle,
                         ingredients: shoppingLists[index].ingredients,
@@ -148,10 +148,9 @@ Future<void> _editListTitle(int index) async {
     ),
   );
 }
-
- Future<void> _addNewList() async {
+// Create new list dialog
+Future<void> _addNewList() async {
   final controller = TextEditingController();
-
   showDialog(
     context: context,
     builder: (context) => Dialog(
@@ -192,19 +191,20 @@ Future<void> _editListTitle(int index) async {
                   ),
                   onPressed: () async {
                     final inputTitle = controller.text.trim();
-
+                    // Title has been filled
                     if (inputTitle.isNotEmpty) {
                       // Capitalize each word
-                      final formattedTitle = inputTitle
+                      final capitalizedTitle = inputTitle
                         .split(' ')
                         .map((word) => word.isNotEmpty ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}' : '')
                         .join(' ')
-                        .trim() + ' Ingredients';  // add Ingredients
+                        .trim();
+                        final formattedTitle = '$capitalizedTitle Ingredients';
 
                       final alreadyExists = shoppingLists.any(
                         (list) => list.title.toLowerCase() == formattedTitle.toLowerCase(),
                       );
-
+                      // Check if the same title name exist in shopping lists
                       if (alreadyExists) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('⚠️ List with same name already exists!')),
@@ -216,6 +216,7 @@ Future<void> _editListTitle(int index) async {
                         final newList = ShoppingList(title: formattedTitle, ingredients: []);
                         await DatabaseHelper.instance.insertShoppingList(newList);
                         await _loadShoppingLists();
+                        // Determine if the state still valid before interact
                         if (context.mounted) {
                           Navigator.pop(context);
                         }
@@ -330,7 +331,19 @@ Future<void> _editListTitle(int index) async {
           const SizedBox(height: 10),
           Expanded(
             child: shoppingLists.isEmpty
-                ? const Center(child: Text('No shopping lists yet.'))
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inbox, size: 80, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text(
+                          'No shopping lists yet.',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  )
                 : ReorderableListView(
                     padding: const EdgeInsets.all(12),
                     onReorder: (oldIndex, newIndex) {
@@ -358,7 +371,9 @@ Future<void> _editListTitle(int index) async {
                                 ),
                               );
                             },
-                            leading: const Icon(Icons.drag_indicator),
+                            leading: ReorderableDragStartListener(index: i,
+                                child: const Icon(Icons.drag_indicator),
+                              ),
                             title: Text(
                               shoppingLists[i].title,
                               style: const TextStyle(
@@ -373,7 +388,7 @@ Future<void> _editListTitle(int index) async {
                                 ...shoppingLists[i].ingredients
                                     .take(3)
                                     .map((e) => Text(e.name, style: const TextStyle(fontSize: 13))),
-                                if (shoppingLists[i].ingredients.length > 3)
+                                if (shoppingLists[i].ingredients.length > 3) // shows '...' if more than 3 ingredients
                                   const Text('...', style: TextStyle(fontSize: 13)),
                               ],
                             ),
