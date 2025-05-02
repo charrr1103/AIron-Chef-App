@@ -29,13 +29,14 @@ class _PantryPageState extends State<PantryPage> {
     _loadPantryItems();
   }
 
+  // When image fail to load
   Widget _fallbackAsset(PantryItem item) {
     return Image.asset(
       'assets/ingredients/${item.name.toLowerCase().replaceAll(" ", "_")}.jpg',
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),// Show image not support if the image not in assets
     );
   }
 
@@ -44,6 +45,7 @@ class _PantryPageState extends State<PantryPage> {
     setState(() {});
   }
 
+  //edit ingredient dialog
   Future<void> _editIngredient(int index) async {
     final item = pantryItems[index];
     final nameController = TextEditingController(text: item.name);
@@ -147,8 +149,8 @@ class _PantryPageState extends State<PantryPage> {
                           onPressed: () async {
                             final newName = nameController.text.trim();
                             final newQty =
-                                int.tryParse(quantityController.text.trim()) ??
-                                1;
+                                //convert string to integer, return 1 if invalid input
+                                int.tryParse(quantityController.text.trim()) ?? 1; 
                             final newCategory = categoryController.text.trim();
 
                             if (newName.isNotEmpty) {
@@ -195,6 +197,7 @@ class _PantryPageState extends State<PantryPage> {
     );
   }
 
+  //remove ingredient dialog
   Future<void> _deleteIngredient(int index) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -246,7 +249,7 @@ class _PantryPageState extends State<PantryPage> {
     );
 
     if (confirm == true) {
-      await DatabaseHelper.instance.deleteIngredient(pantryItems[index].name);
+      await DatabaseHelper.instance.deleteIngredient(pantryItems[index].name); //delete in db and load pantry
       await _loadPantryItems();
 
       ScaffoldMessenger.of(
@@ -255,6 +258,7 @@ class _PantryPageState extends State<PantryPage> {
     }
   }
 
+  //generate recipe
   void _generateRecipe() async {
     final names =
         pantryItems.where((i) => i.isSelected).map((i) => i.name).toList();
@@ -262,7 +266,7 @@ class _PantryPageState extends State<PantryPage> {
 
     setState(() => _loadingRecipes = true);
     try {
-      final recipes = await RecipeService().searchRecipes(names);
+      final recipes = await _recipeService.searchRecipes(names);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -284,14 +288,16 @@ class _PantryPageState extends State<PantryPage> {
 
   Future<String?> fetchUnsplashImage(String name) async {
     final url = Uri.https('api.unsplash.com', '/search/photos', {
-      'query': name,
+      'query': '$name food',
       'per_page': '1',
+      'orientation': 'squarish',
       'client_id': 'BG_jaAJgeU7OwfFcInZyX0bO5OEov_kzVJfZYpHbqdE',
     });
     final resp = await http.get(url);
     if (resp.statusCode == 403) return null;
-    if (resp.statusCode != 200)
+    if (resp.statusCode != 200) {
       throw Exception('Unsplash error: ${resp.statusCode}');
+    }
     final data = json.decode(resp.body);
     final results = data['results'] as List;
     return results.isNotEmpty ? results[0]['urls']['small'] as String : null;
@@ -335,8 +341,10 @@ class _PantryPageState extends State<PantryPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
+    body: _loadingRecipes
+      ? const Center(child: CircularProgressIndicator())
+      : Column(
+          children: [
           const SizedBox(height: 16),
           Container(
             width: 200,
@@ -366,9 +374,11 @@ class _PantryPageState extends State<PantryPage> {
               itemCount: pantryItems.length,
               itemBuilder: (context, index) {
                 final item = pantryItems[index];
+                //expire date within 3 days is considered as expiring soon
                 final isExpiringSoon =
                     item.expiryDate != null &&
                     item.expiryDate!.difference(DateTime.now()).inDays <= 3;
+                //calculate the item's expire date
                 final daysLeft =
                     item.expiryDate?.difference(DateTime.now()).inDays;
 
@@ -386,18 +396,6 @@ class _PantryPageState extends State<PantryPage> {
                               ),
                         ),
 
-                        // ClipRRect(
-                        //   borderRadius: BorderRadius.circular(8),
-                        //   child: Image.asset(
-                        //     'assets/ingredients/${item.name.toLowerCase().replaceAll(" ", "_")}.jpg',
-                        //     height: 50,
-                        //     width: 50,
-                        //     fit: BoxFit.cover,
-                        //     errorBuilder:
-                        //         (context, error, stackTrace) =>
-                        //             const Icon(Icons.image_not_supported),
-                        //   ),
-                        // ),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: FutureBuilder<String?>(
