@@ -6,27 +6,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './home.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Login Page',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Inter',
-      ),
-      home: const LoginPage(),
-    );
-  }
-}
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
   @override
@@ -84,6 +63,9 @@ class _LoginPageState extends State<LoginPage> {
           case 'user-disabled':
             _errorMessage = "This account has been disabled.";
             break;
+          case 'invalid-credential': // Handle the specific error code
+            _errorMessage = "Invalid login credentials.";
+            break;
           default:
             _errorMessage = "An error occurred: ${e.message}";
             break;
@@ -138,53 +120,6 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
   }
-// Function for Facebook Login - DEACTIVATED
-// Future<void> _signInWithFacebook() async {
-// setState(() {
-// _isLoading = true;
-// _errorMessage = '';
-// });
-// try {
-// final LoginResult result = await FacebookAuth.instance.login(
-// permissions: ['email'],
-// );
-//
-// if (result.status != LoginStatus.success) {
-// setState(() {
-// _isLoading = false;
-// _errorMessage =
-// "Facebook Sign-In failed: ${result.message ?? 'Unknown error'}";
-// });
-// return;
-// }
-//
-// final OAuthCredential credential = FacebookAuthProvider.credential(
-// accessToken: result.accessToken!.token,
-// );
-//
-//
-// final UserCredential userCredential =
-// await _auth.signInWithCredential(credential);
-//
-// if (userCredential.user != null) {
-// _saveLoginState();
-// Navigator.pushReplacement(
-// context,
-// MaterialPageRoute(builder: (context) => const HomeScreen()),
-// );
-// }
-// } on FirebaseAuthException catch (e) {
-// setState(() {
-// _isLoading = false;
-// _errorMessage = "Facebook Sign In Failed: ${e.message}";
-// });
-// } catch (error) {
-// setState(() {
-// _isLoading = false;
-// _errorMessage = "Error during Facebook Sign In: $error";
-// });
-// }
-// }
 // Function to save login state
   Future<void> _saveLoginState() async {
     final prefs = await SharedPreferences.getInstance();
@@ -347,10 +282,6 @@ class _LoginPageState extends State<LoginPage> {
                                 _buildSocialLoginButton(
                                     'assets/socialmediaLogos/googleLogo.png',
                                     _signInWithGoogle),
-//const SizedBox(width: 20), DEACTIVATED Facebook Login
-//_buildSocialLoginButton(
-// 'assets/socialmediaLogos/facebookLogo.png',
-// _signInWithFacebook),
                               ],
                             ),
                           ],

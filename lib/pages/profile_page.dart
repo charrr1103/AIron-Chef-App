@@ -1,47 +1,162 @@
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:rxdart/rxdart.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({Key? key}) : super(key: key);
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   String _language = 'English';
   bool _notificationsEnabled = true;
-  String _username = 'Chloe Lam';
-  String _email = 'chloe.lam@example.com';
-  String _phoneNumber = '+1 555-123-4567';
+  String _email = '';
   String? _profilePicturePath;
+  String? _userId;
+  String _fullName = '';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final BehaviorSubject<Map<String, dynamic>> _userProfileSubject =
+  BehaviorSubject<Map<String, dynamic>>.seeded({});
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileData();
+  }
+
+  @override
+  void dispose() {
+    _userProfileSubject.close();
+    super.dispose();
+  }
+
+  Future<void> _loadProfileData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _userId = user.uid;
+      try {
+        DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(_userId).get();
+        if (userDoc.exists) {
+          Map<String, dynamic> userData =
+          userDoc.data() as Map<String, dynamic>;
+          _userProfileSubject.add(userData);
+          setState(() {
+            _email = userData['email'] ?? '';
+            _fullName = userData['fullName'] ?? '';
+            _profilePicturePath = userData['profilePicturePath'];
+          });
+        } else {
+          _userProfileSubject.add({});
+          setState(() {
+            _email = '';
+            _fullName = '';
+            _profilePicturePath = null;
+          });
+        }
+      } catch (e) {
+        print("Error loading profile data: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to load profile data.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        _userProfileSubject.add({});
+        setState(() {
+          _email = '';
+          _fullName = '';
+          _profilePicturePath = null;
+        });
+      }
+    } else {
+      _userProfileSubject.add({});
+      setState(() {
+        _email = '';
+        _fullName = '';
+        _profilePicturePath = null;
+      });
+    }
+  }
 
   void _navigateToEditProfile() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EditProfilePage(
-          username: _username,
-          email: _email,
-          phoneNumber: _phoneNumber,
-          profilePicturePath: _profilePicturePath,
-          onProfilePictureChanged: (String? newPath) {
-            setState(() {
-              _profilePicturePath = newPath;
-            });
-          },
+    final user = _auth.currentUser;
+    if (user != null) {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditProfilePage(
+            email: _email,
+            profilePicturePath: _profilePicturePath,
+            fullName: _fullName,
+            onProfilePictureChanged: (String? newPath) {
+              setState(() {
+                _profilePicturePath = newPath;
+              });
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    if (result != null && result is Map<String, String?>) {
-      setState(() {
-        _username = result['username'] ?? _username;
-        _email = result['email'] ?? _email;
-        _phoneNumber = result['phoneNumber'] ?? _phoneNumber;
-        _profilePicturePath = result['profilePicturePath'];
-      });
+      if (result != null && result is Map<String, String?>) {
+        setState(() {
+          _email = result['email'] ?? _email;
+          _profilePicturePath = result['profilePicturePath'];
+          _fullName = result['fullName'] ?? _fullName;
+        });
+        _userProfileSubject.add({
+          'email': _email,
+          'fullName': _fullName,
+          'profilePicturePath': _profilePicturePath,
+        });
+        _saveProfileData();
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please log in to edit your profile.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfileData() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final userId = user.uid;
+      try {
+        await _firestore.collection('users').doc(userId).update({
+          'email': _email,
+          'fullName': _fullName,
+          'profilePicturePath': _profilePicturePath,
+        });
+        _userProfileSubject.add({
+          'email': _email,
+          'fullName': _fullName,
+          'profilePicturePath': _profilePicturePath,
+        });
+      } catch (e) {
+        print("Error saving profile data: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save profile data.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -108,8 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
         elevation: 0,
         title: const Text('Profile'),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-          ),
+          decoration: const BoxDecoration(),
         ),
       ),
       extendBodyBehindAppBar: true,
@@ -125,135 +239,152 @@ class _ProfilePageState extends State<ProfilePage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 100.0),
-              child: Column(
-                children: [
-                  Stack(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.grey,
-                        backgroundImage: _profilePicturePath != null
-                            ? FileImage(File(_profilePicturePath!))
-                        as ImageProvider<Object>?
-                            : null,
-                        child: _profilePicturePath == null
-                            ? const Icon(Icons.person,
-                            size: 60, color: Colors.white)
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _navigateToEditProfile,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF19006D),
-                              borderRadius: BorderRadius.circular(10),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 100.0),
+                child: StreamBuilder<Map<String, dynamic>>(
+                    stream: _userProfileSubject.stream,
+                    initialData: _userProfileSubject.value,
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final userData = snapshot.data!;
+                        final String? profilePicturePath =
+                        userData['profilePicturePath'];
+                        final String fullName = userData['fullName'] ?? '';
+                        return Column(
+                          children: [
+                            Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Colors.grey,
+                                  backgroundImage: profilePicturePath != null
+                                      ? FileImage(File(profilePicturePath))
+                                  as ImageProvider<Object>?
+                                      : null,
+                                  child: profilePicturePath == null
+                                      ? const Icon(Icons.person,
+                                      size: 60, color: Colors.white)
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: _navigateToEditProfile,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF19006D),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.all(4),
+                                      child: const Icon(
+                                        Icons.edit,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            padding: const EdgeInsets.all(4),
-                            child: const Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: Colors.white,
+                            const SizedBox(height: 16.0),
+                            Text(
+                              fullName,
+                              style: const TextStyle(
+                                fontSize: 25.0,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8.0),
+                            ElevatedButton(
+                              onPressed: _navigateToEditProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF19006D),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20.0),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24.0,
+                                  vertical: 8.0,
+                                ),
+                              ),
+                              child: const Text('Edit Profile'),
+                            ),
+                          ],
+                        );
+                      } else if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else {
+                        return const CircularProgressIndicator();
+                      }
+                    }),
+              ),
+              const SizedBox(height: 24.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10.0),
+                      child: const Text(
+                        'General Settings',
+                        style: TextStyle(
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    _username,
-                    style: const TextStyle(
-                      fontSize: 25.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
                     ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  ElevatedButton(
-                    onPressed: _navigateToEditProfile,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF19006D),
-                      foregroundColor: Colors.white,
+                    const SizedBox(height: 12.0),
+                    Card(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20.0),
+                        borderRadius: BorderRadius.circular(10.0),
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 8.0,
-                      ),
-                    ),
-                    child: const Text('Edit Profile'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24.0),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10.0),
-                    child: const Text(
-                      'General Settings',
-                      style: TextStyle(
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12.0),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.language),
-                          title: const Text('Language'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(_language),
-                              const Icon(Icons.chevron_right),
-                            ],
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.language),
+                            title: const Text('Language'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_language),
+                                const Icon(Icons.chevron_right),
+                              ],
+                            ),
+                            onTap: _changeLanguage,
                           ),
-                          onTap: _changeLanguage,
-                        ),
-                        const Divider(height: 1),
-                        SwitchListTile(
-                          secondary: const Icon(Icons.notifications_none),
-                          title: const Text('Notifications'),
-                          value: _notificationsEnabled,
-                          onChanged: (bool value) {
-                            _toggleNotifications();
-                          },
-                        ),
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.question_mark),
-                          title: const Text('About'),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _navigateToAbout,
-                        ),
-                      ],
+                          const Divider(height: 1),
+                          SwitchListTile(
+                            secondary: const Icon(Icons.notifications_none),
+                            title: const Text('Notifications'),
+                            value: _notificationsEnabled,
+                            onChanged: (bool value) {
+                              _toggleNotifications();
+                            },
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            leading: const Icon(Icons.question_mark),
+                            title: const Text('About'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _navigateToAbout,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -261,67 +392,112 @@ class _ProfilePageState extends State<ProfilePage> {
 }
 
 class EditProfilePage extends StatefulWidget {
-  final String username;
   final String email;
-  final String phoneNumber;
   final String? profilePicturePath;
   final Function(String?) onProfilePictureChanged;
+  final String fullName;
 
   const EditProfilePage({
-    super.key,
-    required this.username,
+    Key? key,
     required this.email,
-    required this.phoneNumber,
-    this.profilePicturePath,
+    required this.profilePicturePath,
     required this.onProfilePictureChanged,
-  });
+    required this.fullName,
+  }) : super(key: key);
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
 }
 
 class _EditProfilePageState extends State<EditProfilePage> {
-  late TextEditingController _usernameController;
   late TextEditingController _emailController;
-  late TextEditingController _phoneNumberController;
   String? _profilePicturePath;
   final ImagePicker _picker = ImagePicker();
+  String? _userId;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late TextEditingController _fullNameController;
+  final BehaviorSubject<Map<String, dynamic>> _userProfileSubject =
+  BehaviorSubject<Map<String, dynamic>>.seeded({});
 
   @override
   void initState() {
     super.initState();
-    _usernameController = TextEditingController(text: widget.username);
     _emailController = TextEditingController(text: widget.email);
-    _phoneNumberController = TextEditingController(text: widget.phoneNumber);
     _profilePicturePath = widget.profilePicturePath;
+    _fullNameController = TextEditingController(text: widget.fullName);
+    _getUserID();
+  }
+
+  Future<void> _getUserID() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      _userId = user.uid;
+    }
   }
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _emailController.dispose();
-    _phoneNumberController.dispose();
+    _fullNameController.dispose();
+    _userProfileSubject.close();
     super.dispose();
   }
 
-  void _saveChanges() {
-    Navigator.pop(context, {
-      'username': _usernameController.text,
-      'email': _emailController.text,
-      'phoneNumber': _phoneNumberController.text,
-      'profilePicturePath': _profilePicturePath,
-    });
+  void _saveChanges() async {
+    if (_userId != null) {
+      try {
+        await _firestore.collection('users').doc(_userId).update({
+          'email': _emailController.text,
+          'fullName': _fullNameController.text,
+          'profilePicturePath': _profilePicturePath,
+        });
+        Map<String, String?> result = {
+          'email': _emailController.text,
+          'profilePicturePath': _profilePicturePath,
+          'fullName': _fullNameController.text,
+        };
+        _userProfileSubject.add({
+          'email': _emailController.text,
+          'fullName': _fullNameController.text,
+          'profilePicturePath': _profilePicturePath,
+        });
+        Navigator.of(context).pop(result);
+      } catch (e) {
+        print("Error saving changes: $e");
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save changes.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _profilePicturePath = pickedFile.path;
-      });
-      widget.onProfilePictureChanged(_profilePicturePath);
-    } else {
-      print('No image selected.');
+    try {
+      final pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          _profilePicturePath = pickedFile.path;
+        });
+        widget.onProfilePictureChanged(_profilePicturePath);
+      } else {
+        print('No image selected.');
+      }
+    } catch (e) {
+      print("Error picking image: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to pick image.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -369,8 +545,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
               colors: [
                 Color(0xFF004AAD),
                 Color(0xFFCB6CE6)
-              ], // Changed the order here
-              begin: Alignment.centerLeft, // Changed alignment
+              ],
+              begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ),
           ),
@@ -378,70 +554,68 @@ class _EditProfilePageState extends State<EditProfilePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            GestureDetector(
-              onTap: _showImageSourceBottomSheet,
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 70,
-                    backgroundColor: Colors.grey,
-                    backgroundImage: _profilePicturePath != null
-                        ? FileImage(File(_profilePicturePath!))
-                    as ImageProvider<Object>?
-                        : null,
-                    child: _profilePicturePath == null
-                        ? const Icon(Icons.person,
-                        size: 80, color: Colors.white)
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF19006D),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.all(4),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 16,
-                        color: Colors.white,
+        child: SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              GestureDetector(
+                onTap: _showImageSourceBottomSheet,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 70,
+                      backgroundColor: Colors.grey,
+                      backgroundImage: _profilePicturePath != null
+                          ? FileImage(File(_profilePicturePath!))
+                      as ImageProvider<Object>?
+                          : null,
+                      child: _profilePicturePath == null
+                          ? const Icon(Icons.person,
+                          size: 80, color: Colors.white)
+                          : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF19006D),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(
+                          Icons.edit,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20.0),
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            const SizedBox(height: 12.0),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 12.0),
-            TextField(
-              controller: _phoneNumberController,
-              decoration: const InputDecoration(labelText: 'Phone Number'),
-            ),
-            const SizedBox(height: 20.0),
-            ElevatedButton(
-              onPressed: _saveChanges,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF19006D),
-                foregroundColor: Colors.white,
+              const SizedBox(height: 20.0),
+              TextField(
+                controller: _fullNameController,
+                decoration: const InputDecoration(labelText: 'Full Name'),
               ),
-              child: const Text('Save Changes'),
-            ),
-          ],
+              const SizedBox(height: 12.0),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 20.0),
+              ElevatedButton(
+                onPressed: _saveChanges,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF19006D),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Save Changes'),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+

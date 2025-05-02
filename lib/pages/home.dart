@@ -11,6 +11,37 @@ import './voice_entry_page.dart';
 import './manual_entry_page.dart';
 import './profile_page.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class UserService {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<String> getCurrentUserFullName() async {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      return 'Guest User';
+    }
+    try {
+      final DocumentSnapshot userDoc =
+      await _firestore.collection('users').doc(user.uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        return userData['fullName'] ?? 'User';
+      } else {
+        return 'User';
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
+      return 'User';
+    }
+  }
+
+  User? getCurrentUser() {
+    return _auth.currentUser;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +49,7 @@ void main() async {
   // Load YOLO model once at startup
   await ObjectDetectionService().loadModel();
 
-  runApp(const HomeScreen());
+  runApp(const MaterialApp(home: HomeScreen()));
 }
 
 class HomeScreen extends StatefulWidget {
@@ -30,6 +61,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isProcessing = false;
+  String _fullName = '...';
+  final UserService _userService = UserService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final fullName = await _userService.getCurrentUserFullName();
+    if (mounted) {
+      setState(() {
+        _fullName = fullName;
+      });
+    }
+  }
 
   Future<void> _processImage(String path) async {
     setState(() => _isProcessing = true);
@@ -43,11 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (_) => IngredientConfirmationScreen(
-                imagePath: path,
-                detectedIngredients: detected,
-              ),
+          builder: (_) => IngredientConfirmationScreen(
+            imagePath: path,
+            detectedIngredients: detected,
+          ),
         ),
       );
 
@@ -86,70 +139,67 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onPhotoEntry() {
     showModalBottomSheet(
       context: context,
-      builder:
-          (context) => SafeArea(
-            child: Wrap(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Take Photo'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _takePhoto();
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Pick from Gallery'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickFromGallery();
-                  },
-                ),
-              ],
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _takePhoto();
+              },
             ),
-          ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Pick from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickFromGallery();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Future<void> _showBetaInfo() async {
     final labels = await rootBundle.loadString('assets/models/coco_labels.txt');
 
-    final message =
-        StringBuffer()
-          ..writeln(
-            '🚧 This app is currently in beta testing. '
+    final message = StringBuffer()
+      ..writeln(
+        '🚧 This app is currently in beta testing. '
             'Model accuracy is limited and only a small set of ingredients '
             'can be detected reliably. Thank you for testing!',
-          )
-          ..writeln('\n— Available detection classes —\n')
-          ..writeln(labels.trim());
+      )
+      ..writeln('\n— Available detection classes —\n')
+      ..writeln(labels.trim());
 
     showDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text('Early Access Information'),
+        content: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.5,
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Text(
+              message.toString(),
+              style: const TextStyle(fontSize: 14),
             ),
-            title: const Text('Early Access Information'),
-            content: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.5,
-              width: double.maxFinite,
-              child: SingleChildScrollView(
-                child: Text(
-                  message.toString(),
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
-              ),
-            ],
           ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -185,13 +235,14 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.account_circle, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const ProfilePage(),
                     ),
                   );
+                  _loadUserName();
                 },
               ),
             ],
@@ -214,9 +265,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Hi, John Doe!',
-                        style: TextStyle(
+                      Text(
+                        'Hi, $_fullName!',
+                        style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -253,11 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder:
-                                  (context) => ManualEntryPage(
-                                    // pantryItems: [], // TODO: add pantry items
-                                    // recentItems: [], // TODO: add recent items
-                                  ),
+                              builder: (context) => ManualEntryPage(),
                             ),
                           );
                         },
@@ -346,26 +393,51 @@ class _HomeScreenState extends State<HomeScreen> {
     required String label,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6B4EFF),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6B4EFF), Color(0xFF9747FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 4),
-            const Text('✨', style: TextStyle(fontSize: 16)),
+            // circular icon badge
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 28, color: Colors.white),
+            ),
+            const SizedBox(width: 16),
+            // label text
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            // chevron
+            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
           ],
         ),
       ),
@@ -388,3 +460,4 @@ class IngredientItem {
     required this.boundingBox,
   });
 }
+

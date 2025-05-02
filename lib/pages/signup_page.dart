@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'dart:ui';
-import './home.dart'; // Import your home.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Cloud Firestore
+import './home.dart';
 import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -16,7 +16,6 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _nameController = TextEditingController();
-  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -28,6 +27,10 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
+
+  // Reference to the Firestore collection
+  final CollectionReference _usersCollection = FirebaseFirestore.instance.collection('users');
+  final FirebaseAuth _auth = FirebaseAuth.instance; // Add FirebaseAuth instance
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +87,6 @@ class _SignUpPageState extends State<SignUpPage> {
                         _buildTextField(
                           hintText: 'Full Name',
                           controller: _nameController,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          hintText: 'Username',
-                          controller: _usernameController,
                         ),
                         const SizedBox(height: 16),
                         _buildTextField(
@@ -156,6 +154,31 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                           ],
                         ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => WillPopScope(
+                                  onWillPop: () async {
+                                    exit(0);
+                                  },
+                                  child: const HomeScreen(),
+                                ),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(),
+                          child: const Text(
+                            'Continue as Guest',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.black87,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -209,6 +232,8 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
             ),
+          // "Continue as Guest" positioned below the blurred area
+          // Removed this positioned widget
         ],
       ),
     );
@@ -230,10 +255,18 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword( // Use the FirebaseAuth instance
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      // Add user data to Firestore
+      await _usersCollection.doc(userCredential.user!.uid).set({
+        'email': _emailController.text.trim(),
+        'fullName': _nameController.text.trim(),
+        // Add other user data here as needed
+      });
+
 
       print('User signed up: ${userCredential.user?.email}');
       setState(() {
@@ -274,6 +307,12 @@ class _SignUpPageState extends State<SignUpPage> {
           _emailError = 'Error: ${e.message}';
         });
       }
+    } catch (e) {
+      // Handle other potential errors, such as Firestore errors.
+      print("Error saving to Firestore: $e");
+      setState(() {
+        _emailError = 'An error occurred during sign up.'; // A more generic error for the user
+      });
     }
   }
 
@@ -331,3 +370,4 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
+

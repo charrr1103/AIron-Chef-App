@@ -52,4 +52,5 @@ dependencies {
     // For example:
     // implementation("com.google.firebase:firebase-auth")
     // implementation("com.google.firebase:firebase-firestore")
+    implementation("com.facebook.android:facebook-login:[latest-version]")
 }

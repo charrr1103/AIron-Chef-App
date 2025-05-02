@@ -3,12 +3,11 @@ plugins {
     id("com.android.library").apply(false)
     id("org.jetbrains.kotlin.android").apply(false)
     id("dev.flutter.flutter-gradle-plugin").apply(false)
-    id("com.google.gms.google-services").apply(false) // Corrected line
+    id("com.google.gms.google-services").apply(false)
 }
 
-
 buildscript {
-    val kotlin_version by extra("1.9.10") // Define the Kotlin version explicitly
+    val kotlin_version by extra("1.9.10")
 
     repositories {
         google()
@@ -17,7 +16,7 @@ buildscript {
 
     dependencies {
         classpath("com.android.tools.build:gradle:8.7.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version") // Use the defined version
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version")
     }
 }
 
