@@ -36,12 +36,15 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
 
   void _loadInitialRecipes() {
     final provider = Provider.of<RecipeProvider>(context, listen: false);
-    provider.fetchRecipesForIngredient(widget.ingredient, filters: widget.filters);
+    provider.fetchRecipesForIngredient(
+      widget.ingredient,
+      filters: widget.filters,
+    );
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore) {
       _loadMoreRecipes();
     }
@@ -49,10 +52,6 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
 
   Future<void> _loadMoreRecipes() async {
     setState(() => _isLoadingMore = true);
-    
-    // Implement pagination logic here
-    // You'll need to modify the RecipeProvider to handle pagination
-    
     setState(() => _isLoadingMore = false);
   }
 
@@ -76,7 +75,10 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
         ),
         title: Text(
           'Recipes with ${widget.ingredient}',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: Consumer<RecipeProvider>(
@@ -92,7 +94,7 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
           }
 
           final recipes = provider.getRecipesForIngredient(widget.ingredient);
-          
+
           return GridView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
@@ -114,9 +116,7 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => RecipePage(
-                        recipeId: recipe['id'],
-                      ),
+                      builder: (context) => RecipePage(recipeId: recipe['id']),
                     ),
                   );
                 },
@@ -128,10 +128,7 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.network(
-                        recipe['image'],
-                        fit: BoxFit.cover,
-                      ),
+                      Image.network(recipe['image'], fit: BoxFit.cover),
                       Positioned(
                         bottom: 0,
                         left: 0,
@@ -170,4 +167,4 @@ class _IngredientRecipesPageState extends State<IngredientRecipesPage> {
       ),
     );
   }
-} 
+}

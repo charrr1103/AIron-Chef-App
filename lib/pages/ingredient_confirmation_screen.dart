@@ -65,7 +65,6 @@ class _IngredientConfirmationScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Image with bounding boxes or plain image
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child:
@@ -98,7 +97,6 @@ class _IngredientConfirmationScreenState
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              // List of items or placeholder
               if (ingredients.isNotEmpty)
                 ...ingredients.map((ing) {
                   return Card(

@@ -23,12 +23,10 @@ class DatabaseHelper {
       path,
       version: _dbVersion,
       onCreate: (db, version) async {
-        // fresh install
         await db.execute(_createPantryTableSql);
-        await db.execute(_createShoppingListsTableSql); 
+        await db.execute(_createShoppingListsTableSql);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        // only version 1 → 2 currently; drop & recreate
         if (oldVersion < 2) {
           await db.execute('DROP TABLE IF EXISTS $_tablePantry');
           await db.execute('DROP TABLE IF EXISTS $_tableShoppingLists');
@@ -61,7 +59,7 @@ class DatabaseHelper {
     )
   ''';
 
-  /// 1. Fetch the 5 most‐recently updated pantry names
+  /// Fetch the 5 most‐recently updated pantry names
   Future<List<PantryItem>> getRecentPantryItems({int limit = 5}) async {
     final db = await database;
     final path = await getDatabasesPath();
@@ -75,7 +73,7 @@ class DatabaseHelper {
     return rows.map((r) => PantryItem.fromMap(r)).toList();
   }
 
-  /// 2. Fetch all pantry names (e.g. for matching suggestions)
+  /// Fetch all pantry names (e.g. for matching suggestions)
   Future<List<PantryItem>> getAllPantryItems() async {
     final db = await database;
     final rows = await db.query(
@@ -85,7 +83,7 @@ class DatabaseHelper {
     return rows.map((r) => PantryItem.fromMap(r)).toList();
   }
 
-  /// 3. Insert a new pantry item (or update an existing one’s timestamp)
+  /// Insert a new pantry item (or update an existing one’s timestamp)
   Future<int> addPantryItem({
     required String name,
     int quantity = 1,
@@ -107,15 +105,13 @@ class DatabaseHelper {
   // Insert PantryItem
   Future<int> insertPantryItem(PantryItem item) async {
     final db = await database;
-    return await db.insert(_tablePantry,{
-        'name': item.name,
-        'quantity': item.quantity,
-        'category': item.category,
-        'expiry_date': item.expiryDate?.toIso8601String(),
-        'updated_at': item.updatedAt,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    return await db.insert(_tablePantry, {
+      'name': item.name,
+      'quantity': item.quantity,
+      'category': item.category,
+      'expiry_date': item.expiryDate?.toIso8601String(),
+      'updated_at': item.updatedAt,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // Get all ingredients from pantry
@@ -124,28 +120,25 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query(_tablePantry);
 
     return List.generate(maps.length, (i) {
-      return PantryItem.fromMap(maps[i]); 
+      return PantryItem.fromMap(maps[i]);
     });
   }
 
   // Delete an ingredient by name
   Future<int> deleteIngredient(String name) async {
     final db = await database;
-    return await db.delete(_tablePantry,
-      where: 'name = ?',
-      whereArgs: [name],
-    );
+    return await db.delete(_tablePantry, where: 'name = ?', whereArgs: [name]);
   }
 
   // Insert/update shopping list
   Future<int> insertShoppingList(ShoppingList list) async {
     final db = await database;
-    return await db.insert(_tableShoppingLists,{
-        'title': list.title,
-        'ingredients': json.encode(list.ingredients.map((e) => e.toJson()).toList()),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    return await db.insert(_tableShoppingLists, {
+      'title': list.title,
+      'ingredients': json.encode(
+        list.ingredients.map((e) => e.toJson()).toList(),
+      ),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   // Get all shopping lists
@@ -154,9 +147,14 @@ class DatabaseHelper {
     final List<Map<String, dynamic>> maps = await db.query(_tableShoppingLists);
     return List.generate(maps.length, (i) {
       return ShoppingList(
-        id: maps[i]['id'] as int?, 
+        id: maps[i]['id'] as int?,
         title: maps[i]['title'] as String,
-        ingredients: (json.decode(maps[i]['ingredients']) as List).map((e) => ShoppingIngredient.fromJson(e as Map<String, dynamic>)).toList(),
+        ingredients:
+            (json.decode(maps[i]['ingredients']) as List)
+                .map(
+                  (e) => ShoppingIngredient.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
       );
     });
   }
@@ -164,7 +162,8 @@ class DatabaseHelper {
   // Delete shopping list by title
   Future<int> deleteShoppingList(String title) async {
     final db = await database;
-    return await db.delete(_tableShoppingLists,
+    return await db.delete(
+      _tableShoppingLists,
       where: 'title = ?',
       whereArgs: [title],
     );

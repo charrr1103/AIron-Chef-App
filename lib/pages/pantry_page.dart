@@ -36,7 +36,10 @@ class _PantryPageState extends State<PantryPage> {
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),// Show image not support if the image not in assets
+      errorBuilder:
+          (_, __, ___) => const Icon(
+            Icons.image_not_supported,
+          ), // Show image not support if the image not in assets
     );
   }
 
@@ -150,7 +153,8 @@ class _PantryPageState extends State<PantryPage> {
                             final newName = nameController.text.trim();
                             final newQty =
                                 //convert string to integer, return 1 if invalid input
-                                int.tryParse(quantityController.text.trim()) ?? 1; 
+                                int.tryParse(quantityController.text.trim()) ??
+                                1;
                             final newCategory = categoryController.text.trim();
 
                             if (newName.isNotEmpty) {
@@ -249,7 +253,9 @@ class _PantryPageState extends State<PantryPage> {
     );
 
     if (confirm == true) {
-      await DatabaseHelper.instance.deleteIngredient(pantryItems[index].name); //delete in db and load pantry
+      await DatabaseHelper.instance.deleteIngredient(
+        pantryItems[index].name,
+      ); //delete in db and load pantry
       await _loadPantryItems();
 
       ScaffoldMessenger.of(
@@ -341,270 +347,342 @@ class _PantryPageState extends State<PantryPage> {
           ),
         ],
       ),
-    body: _loadingRecipes
-      ? const Center(child: CircularProgressIndicator())
-      : Column(
-          children: [
-          const SizedBox(height: 16),
-          Container(
-            width: 200,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF004AAD), Color(0xFFCB6CE6)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Pantry',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: pantryItems.length,
-              itemBuilder: (context, index) {
-                final item = pantryItems[index];
-                //expire date within 3 days is considered as expiring soon
-                final isExpiringSoon =
-                    item.expiryDate != null &&
-                    item.expiryDate!.difference(DateTime.now()).inDays <= 3;
-                //calculate the item's expire date
-                final daysLeft =
-                    item.expiryDate?.difference(DateTime.now()).inDays;
-
-                return Card(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        Checkbox(
-                          value: item.isSelected,
-                          onChanged:
-                              (value) => setState(
-                                () => item.isSelected = value ?? false,
-                              ),
-                        ),
-
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: FutureBuilder<String?>(
-                            future: imageService.getImageUrl(item.name),
-                            builder: (ctx, snap) {
-                              if (snap.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const SizedBox(
-                                  width: 50,
-                                  height: 50,
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                );
-                              }
-                              final url = snap.data;
-                              if (url != null) {
-                                return Image.network(
-                                  url,
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (_, __, ___) => _fallbackAsset(item),
-                                );
-                              }
-                              return _fallbackAsset(item);
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (isExpiringSoon && daysLeft != null)
-                                Text(
-                                  'Expiring in $daysLeft day${daysLeft == 1 ? '' : 's'}',
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          children: [
-                            Row(
-                              children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle_outline),
-                                onPressed: () async {
-                                  final currentQty = pantryItems[index].quantity;
-
-                                  if (currentQty <= 1) { //ensure no negative quantity
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => Dialog(
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(20),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(20),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Text(
-                                                'Remove Ingredient',
-                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                              ),
-                                              const SizedBox(height: 16),
-                                              const Text(
-                                                'Quantity is 1. Do you want to remove this ingredient from your pantry?',
-                                              ),
-                                              const SizedBox(height: 24),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: [
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(context, false),
-                                                    child: const Text('Cancel'),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  ElevatedButton(
-                                                    onPressed: () => Navigator.pop(context, true),
-                                                    style: ElevatedButton.styleFrom(
-                                                      backgroundColor: Colors.red,
-                                                      foregroundColor: Colors.white,
-                                                    ),
-                                                    child: const Text('Remove'),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-
-                                    if (confirm == true) {
-                                      await DatabaseHelper.instance.deleteIngredient(pantryItems[index].name);
-                                      await _loadPantryItems();
-                                    }
-
-                                    return;
-                                  }
-
-                                  // normal quantity decrement
-                                  final updatedItem = pantryItems[index].copyWith(
-                                    quantity: currentQty - 1,
-                                    updatedAt: DateTime.now().millisecondsSinceEpoch,
-                                  );
-
-                                  setState(() {
-                                    pantryItems[index] = updatedItem;
-                                  });
-
-                                  await DatabaseHelper.instance.insertPantryItem(updatedItem);
-                                },
-                              ),
-                                Text(
-                                  item.quantity.toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.add_circle_outline),
-                                  onPressed: () async {
-                                    final updatedItem = pantryItems[index]
-                                        .copyWith(
-                                          quantity:
-                                              pantryItems[index].quantity + 1,
-                                          updatedAt:
-                                              DateTime.now()
-                                                  .millisecondsSinceEpoch,
-                                        );
-
-                                    setState(() {
-                                      pantryItems[index] = updatedItem;
-                                    });
-
-                                    await DatabaseHelper.instance
-                                        .insertPantryItem(updatedItem);
-                                  },
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, size: 18),
-                                  onPressed: () => _editIngredient(index),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                  ),
-                                  onPressed: () => _deleteIngredient(index),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ],
+      body:
+          _loadingRecipes
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 200,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF004AAD), Color(0xFFCB6CE6)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Pantry',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: ElevatedButton.icon(
-              onPressed: _generateRecipe,
-              icon: const Icon(Icons.auto_awesome, color: Colors.white),
-              label: const Text(
-                'Generate Recipe',
-                style: TextStyle(color: Colors.white),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: pantryItems.length,
+                      itemBuilder: (context, index) {
+                        final item = pantryItems[index];
+                        final isExpiringSoon =
+                            item.expiryDate != null &&
+                            item.expiryDate!
+                                    .difference(DateTime.now())
+                                    .inDays <=
+                                3;
+                        //calculate the item expire date
+                        final daysLeft =
+                            item.expiryDate?.difference(DateTime.now()).inDays;
+
+                        return Card(
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: item.isSelected,
+                                  onChanged:
+                                      (value) => setState(
+                                        () => item.isSelected = value ?? false,
+                                      ),
+                                ),
+
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: FutureBuilder<String?>(
+                                    future: imageService.getImageUrl(item.name),
+                                    builder: (ctx, snap) {
+                                      if (snap.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const SizedBox(
+                                          width: 50,
+                                          height: 50,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                      final url = snap.data;
+                                      if (url != null) {
+                                        return Image.network(
+                                          url,
+                                          width: 50,
+                                          height: 50,
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (_, __, ___) =>
+                                                  _fallbackAsset(item),
+                                        );
+                                      }
+                                      return _fallbackAsset(item);
+                                    },
+                                  ),
+                                ),
+
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (isExpiringSoon && daysLeft != null)
+                                        Text(
+                                          'Expiring in $daysLeft day${daysLeft == 1 ? '' : 's'}',
+                                          style: const TextStyle(
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                          ),
+                                          onPressed: () async {
+                                            final currentQty =
+                                                pantryItems[index].quantity;
+
+                                            if (currentQty <= 1) {
+                                              //ensure no negative quantity
+                                              final confirm = await showDialog<
+                                                bool
+                                              >(
+                                                context: context,
+                                                builder:
+                                                    (context) => Dialog(
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              20,
+                                                            ),
+                                                      ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              20,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                20,
+                                                              ),
+                                                        ),
+                                                        child: Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            const Text(
+                                                              'Remove Ingredient',
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 18,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 16,
+                                                            ),
+                                                            const Text(
+                                                              'Quantity is 1. Do you want to remove this ingredient from your pantry?',
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 24,
+                                                            ),
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .end,
+                                                              children: [
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () => Navigator.pop(
+                                                                        context,
+                                                                        false,
+                                                                      ),
+                                                                  child:
+                                                                      const Text(
+                                                                        'Cancel',
+                                                                      ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                ElevatedButton(
+                                                                  onPressed:
+                                                                      () => Navigator.pop(
+                                                                        context,
+                                                                        true,
+                                                                      ),
+                                                                  style: ElevatedButton.styleFrom(
+                                                                    backgroundColor:
+                                                                        Colors
+                                                                            .red,
+                                                                    foregroundColor:
+                                                                        Colors
+                                                                            .white,
+                                                                  ),
+                                                                  child:
+                                                                      const Text(
+                                                                        'Remove',
+                                                                      ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ),
+                                              );
+
+                                              if (confirm == true) {
+                                                await DatabaseHelper.instance
+                                                    .deleteIngredient(
+                                                      pantryItems[index].name,
+                                                    );
+                                                await _loadPantryItems();
+                                              }
+
+                                              return;
+                                            }
+
+                                            // normal quantity decrement
+                                            final updatedItem =
+                                                pantryItems[index].copyWith(
+                                                  quantity: currentQty - 1,
+                                                  updatedAt:
+                                                      DateTime.now()
+                                                          .millisecondsSinceEpoch,
+                                                );
+
+                                            setState(() {
+                                              pantryItems[index] = updatedItem;
+                                            });
+
+                                            await DatabaseHelper.instance
+                                                .insertPantryItem(updatedItem);
+                                          },
+                                        ),
+                                        Text(
+                                          item.quantity.toString(),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.add_circle_outline,
+                                          ),
+                                          onPressed: () async {
+                                            final updatedItem =
+                                                pantryItems[index].copyWith(
+                                                  quantity:
+                                                      pantryItems[index]
+                                                          .quantity +
+                                                      1,
+                                                  updatedAt:
+                                                      DateTime.now()
+                                                          .millisecondsSinceEpoch,
+                                                );
+
+                                            setState(() {
+                                              pantryItems[index] = updatedItem;
+                                            });
+
+                                            await DatabaseHelper.instance
+                                                .insertPantryItem(updatedItem);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            size: 18,
+                                          ),
+                                          onPressed:
+                                              () => _editIngredient(index),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            size: 18,
+                                          ),
+                                          onPressed:
+                                              () => _deleteIngredient(index),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: ElevatedButton.icon(
+                      onPressed: _generateRecipe,
+                      icon: const Icon(Icons.auto_awesome, color: Colors.white),
+                      label: const Text(
+                        'Generate Recipe',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B4EFF),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6B4EFF),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: const Color(0xFF19006d),

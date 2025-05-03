@@ -8,7 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import '../pages/shopping_list.dart';
 import '../pages/shopping_ingredient.dart';
-import '../services/ingredient_images_service.dart'; 
+import '../services/ingredient_images_service.dart';
 
 class ShoppingListDetailPage extends StatefulWidget {
   final ShoppingList list;
@@ -24,9 +24,10 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   final imageService = IngredientImageService();
 
   // Change state to 'bought' when user select the checkbox
-  void _toggleBought(int index) { 
+  void _toggleBought(int index) {
     setState(() {
-      widget.list.ingredients[index].bought = !widget.list.ingredients[index].bought;
+      widget.list.ingredients[index].bought =
+          !widget.list.ingredients[index].bought;
     });
   }
 
@@ -54,7 +55,10 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
       width: 50,
       height: 50,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported), // Show image not support if the image not in assets
+      errorBuilder:
+          (_, __, ___) => const Icon(
+            Icons.image_not_supported,
+          ), // Show image not support if the image not in assets
     );
   }
 
@@ -69,14 +73,16 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
       final result = await Permission.manageExternalStorage.request();
       if (result.isGranted) {
         await _downloadAsImage();
-      } 
-      else if (result.isPermanentlyDenied) {
+      } else if (result.isPermanentlyDenied) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enable storage permission in settings to download the image.')),
+          const SnackBar(
+            content: Text(
+              'Please enable storage permission in settings to download the image.',
+            ),
+          ),
         );
         openAppSettings();
-      } 
-      else {
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Storage permission not granted.')),
         );
@@ -90,116 +96,143 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Add Ingredient',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+      builder:
+          (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: 'Enter ingredient name',
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  filled: true,
-                  fillColor: const Color(0xFFF4F4F4),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                  const Text(
+                    'Add Ingredient',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      final name = controller.text.trim().split(' ').map((word) => word.isNotEmpty
-                        ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}' // Standadize to capitalize the first letter
-                        : '').join(' ');
-                      if (name.isNotEmpty) {//Check if user got input 
-                        final alreadyExists = widget.list.ingredients.any(
-                          (ingredient) => ingredient.name.toLowerCase() == name.toLowerCase(), // Remove duplicates
-                        );
-                        if (alreadyExists) {//Check if the ingredient already exits
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Ingredient already exists')),
-                          );
-                          return;
-                        }
-                        setState(() {
-                          widget.list.ingredients.add(ShoppingIngredient(name: name));
-                        });
-                        Navigator.pop(context);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF004AAD),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: 'Enter ingredient name',
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFF4F4F4),
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                    child: const Text('Add'),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          final name = controller.text
+                              .trim()
+                              .split(' ')
+                              .map(
+                                (word) =>
+                                    word.isNotEmpty
+                                        ? '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}'
+                                        : '',
+                              )
+                              .join(' ');
+                          if (name.isNotEmpty) {
+                            // Check if user got input
+                            final alreadyExists = widget.list.ingredients.any(
+                              (ingredient) =>
+                                  ingredient.name.toLowerCase() ==
+                                  name.toLowerCase(), // Remove duplicates
+                            );
+                            if (alreadyExists) {
+                              // Check if the ingredient already exits
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Ingredient already exists'),
+                                ),
+                              );
+                              return;
+                            }
+                            setState(() {
+                              widget.list.ingredients.add(
+                                ShoppingIngredient(name: name),
+                              );
+                            });
+                            Navigator.pop(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF004AAD),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Add'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
   //download the shopping list as image
   Future<void> _downloadAsImage() async {
     try {
-      RenderRepaintBoundary boundary = _globalKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0); //higher image resolution
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png); // convert to byte data for saving or sharing purpose
+      RenderRepaintBoundary boundary =
+          _globalKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-      if (byteData == null) { //fail to convert the image to byte data
+      if (byteData == null) {
+        // fail to convert the image to byte data
         throw Exception("Failed to get byte data from image.");
       }
 
       final pngBytes = byteData.buffer.asUint8List();
 
       final directory = Directory('/storage/emulated/0/Download');
-      final filePath = '${directory.path}/${widget.list.title.replaceAll(" ", "_")}.png';
+      final filePath =
+          '${directory.path}/${widget.list.title.replaceAll(" ", "_")}.png';
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('✅ Image saved to: $filePath')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('✅ Image saved to: $filePath')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Failed to save image: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('❌ Failed to save image: $e')));
     }
   }
 
   Future<void> _shareAsText() async {
     final text = widget.list.ingredients
-        .map((item) => '${item.bought ? '[x]' : '[ ]'} ${item.name}')//those ingredients that bought will be represent as [x] in text
+        .map(
+          (item) => '${item.bought ? '[x]' : '[ ]'} ${item.name}',
+        ) // Those ingredients that bought will be represent as [x] in text
         .join('\n');
-    Share.share('🛒 ${widget.list.title}\n\n$text'); //native share dialog
+    Share.share('🛒 ${widget.list.title}\n\n$text'); // Native share dialog
   }
 
   @override
@@ -212,14 +245,18 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
             children: [
               const SizedBox(height: 12),
 
-              RepaintBoundary( //starting point to capture the widget
+              RepaintBoundary(
+                // Starting point to capture the widget
                 key: _globalKey,
                 child: Container(
                   color: const Color(0xFFFFFBF0),
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF004AAD), Color(0xFFCB6CE6)],
@@ -250,12 +287,16 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
                       ListView.builder(
                         shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(), //avoid inner scrolling for list
+                        physics:
+                            const NeverScrollableScrollPhysics(), // Avoid inner scrolling for list
                         itemCount: widget.list.ingredients.length,
                         itemBuilder: (context, index) {
                           final ingredient = widget.list.ingredients[index];
                           return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -264,11 +305,13 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
                                   color: Colors.black12,
                                   blurRadius: 4,
                                   offset: Offset(2, 2),
-                                )
+                                ),
                               ],
                             ),
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               leading: Checkbox(
                                 value: ingredient.bought,
                                 onChanged: (_) => _toggleBought(index),
@@ -276,20 +319,28 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
                               title: Text(
                                 ingredient.name,
                                 style: TextStyle(
-                                  decoration: ingredient.bought ? TextDecoration.lineThrough : null,
+                                  decoration:
+                                      ingredient.bought
+                                          ? TextDecoration.lineThrough
+                                          : null,
                                 ),
                               ),
                               trailing: ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: FutureBuilder<String?>(
-                                  future: imageService.getImageUrl(ingredient.name),
+                                  future: imageService.getImageUrl(
+                                    ingredient.name,
+                                  ),
                                   builder: (ctx, snap) {
-                                    if (snap.connectionState == ConnectionState.waiting) {
+                                    if (snap.connectionState ==
+                                        ConnectionState.waiting) {
                                       return const SizedBox(
                                         width: 50,
                                         height: 50,
                                         child: Center(
-                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
                                         ),
                                       );
                                     }
@@ -300,7 +351,9 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
                                         width: 50,
                                         height: 50,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => _fallbackAsset(ingredient),
+                                        errorBuilder:
+                                            (_, __, ___) =>
+                                                _fallbackAsset(ingredient),
                                       );
                                     }
                                     return _fallbackAsset(ingredient);

@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../services/object_detection_service.dart';
 
-/// Displays an image and draws YOLO bounding boxes on top.
 class ObjectDetectionView extends StatefulWidget {
   const ObjectDetectionView({
     super.key,
@@ -37,7 +36,6 @@ class _ObjectDetectionViewState extends State<ObjectDetectionView> {
         final img = snap.data!;
         return LayoutBuilder(
           builder: (context, constraints) {
-            // Compute scale so the image fits (contain) inside the available box
             final scale = _containScale(
               img.width.toDouble(),
               img.height.toDouble(),
@@ -49,14 +47,12 @@ class _ObjectDetectionViewState extends State<ObjectDetectionView> {
 
             return Stack(
               children: [
-                // ① the bitmap itself
                 Positioned.fill(
                   child: FittedBox(
                     fit: BoxFit.contain,
                     child: Image.file(widget.imageFile),
                   ),
                 ),
-                // ② boxes
                 for (final d in widget.detections)
                   Positioned(
                     left: offsetX + d.boundingBox.left * scale,
@@ -77,7 +73,6 @@ class _ObjectDetectionViewState extends State<ObjectDetectionView> {
       await decodeImageFromList(await f.readAsBytes());
 }
 
-/// Simple white‑text box with red border
 class _Box extends StatelessWidget {
   const _Box({required this.label, required this.conf});
   final String label;
