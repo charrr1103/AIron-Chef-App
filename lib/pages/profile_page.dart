@@ -4,7 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rxdart/rxdart.dart';
-import './onboarding_screen.dart';
+import 'package:airon_chef/pages/onboarding_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import './signup_page.dart';
+import './login_page.dart'; // Import the login page
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -14,7 +17,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _language = 'English';
   bool _notificationsEnabled = true;
   String _email = '';
   String? _profilePicturePath;
@@ -52,7 +54,6 @@ class _ProfilePageState extends State<ProfilePage> {
             _email = userData['email'] ?? '';
             _fullName = userData['fullName'] ?? '';
             _profilePicturePath = userData['profilePicturePath'];
-            _language = userData['language'] ?? 'English'; // Load language
           });
         } else {
           _userProfileSubject.add({});
@@ -60,7 +61,6 @@ class _ProfilePageState extends State<ProfilePage> {
             _email = '';
             _fullName = '';
             _profilePicturePath = null;
-            _language = 'English';
           });
         }
       } catch (e) {
@@ -78,7 +78,6 @@ class _ProfilePageState extends State<ProfilePage> {
           _email = '';
           _fullName = '';
           _profilePicturePath = null;
-          _language = 'English';
         });
       }
     } else {
@@ -87,7 +86,6 @@ class _ProfilePageState extends State<ProfilePage> {
         _email = '';
         _fullName = '';
         _profilePicturePath = null;
-        _language = 'English';
       });
     }
   }
@@ -102,17 +100,10 @@ class _ProfilePageState extends State<ProfilePage> {
             email: _email,
             profilePicturePath: _profilePicturePath,
             fullName: _fullName,
-            currentLanguage: _language, // Pass current language
             onProfilePictureChanged: (String? newPath) {
               setState(() {
                 _profilePicturePath = newPath;
               });
-            },
-            onLanguageChanged: (String newLanguage) {
-              setState(() {
-                _language = newLanguage;
-              });
-              _saveProfileData(language: newLanguage); // Save language on change
             },
           ),
         ),
@@ -123,13 +114,11 @@ class _ProfilePageState extends State<ProfilePage> {
           _email = result['email'] ?? _email;
           _profilePicturePath = result['profilePicturePath'];
           _fullName = result['fullName'] ?? _fullName;
-          _language = result['language'] ?? _language;
         });
         _userProfileSubject.add({
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
-          'language': _language,
         });
         _saveProfileData();
       }
@@ -145,7 +134,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _saveProfileData({String? language}) async {
+  Future<void> _saveProfileData() async {
     final user = _auth.currentUser;
     if (user != null) {
       final userId = user.uid;
@@ -154,13 +143,11 @@ class _ProfilePageState extends State<ProfilePage> {
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
-          'language': language ?? _language, // Save current or provided language
         });
         _userProfileSubject.add({
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
-          'language': language ?? _language,
         });
       } catch (e) {
         print("Error saving profile data: $e");
@@ -176,49 +163,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _changeLanguage() {
-    showModalBottomSheet<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            ListTile(
-              title: const Text('English'),
-              onTap: () {
-                setState(() {
-                  _language = 'English';
-                });
-                _saveProfileData(language: 'English');
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('Malay'),
-              onTap: () {
-                setState(() {
-                  _language = 'Malay';
-                });
-                _saveProfileData(language: 'Malay');
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('Chinese'),
-              onTap: () {
-                setState(() {
-                  _language = 'Chinese';
-                });
-                _saveProfileData(language: 'Chinese');
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _toggleNotifications() {
     setState(() {
       _notificationsEnabled = !_notificationsEnabled;
@@ -227,24 +171,70 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _navigateToAbout() {
-    print('Navigate to About');
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('About Airon Chef'),
+          content: const Text(
+            'Airon Chef is your personal cooking assistant app that helps you discover and create delicious recipes. '
+                'Version 1.0.0\n\n'
+                '© 2025 Airon Chef Team',
+          ),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
-  void _navigateToSignIn() { // New function to navigate to sign-in
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const OnboardingScreen()), // Use your OnboardingScreen widget here
+  void _navigateToSignUp() {
+    if (_auth.currentUser != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You are already signed in!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const SignUpPage()),
+          (Route<dynamic> route) => false,
+    );
+  }
+
+  void _navigateToLogin() {
+    if (_auth.currentUser != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You are already signed in!'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
     );
   }
 
   void _signOut() async {
     try {
       await _auth.signOut();
+      // Clear the login state from SharedPreferences on logout
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', false);
       if (context.mounted) {
-        // Use pushReplacement to avoid going back to the ProfilePage.
-        Navigator.pushReplacement(
-          context,
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+              (Route<dynamic> route) => false,
         );
       }
     } catch (e) {
@@ -401,14 +391,15 @@ class _ProfilePageState extends State<ProfilePage> {
                           ListTile(
                             leading: const Icon(Icons.language),
                             title: const Text('Language'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(_language),
-                                const Icon(Icons.chevron_right),
-                              ],
-                            ),
-                            onTap: _changeLanguage,
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              // Language button remains but does nothing
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Language selection is not implemented'),
+                                ),
+                              );
+                            },
                           ),
                           const Divider(height: 1),
                           SwitchListTile(
@@ -427,11 +418,18 @@ class _ProfilePageState extends State<ProfilePage> {
                             onTap: _navigateToAbout,
                           ),
                           const Divider(height: 1),
-                          ListTile( // Add the new ListTile here
-                            leading: const Icon(Icons.login),
-                            title: const Text('Sign In'),
+                          ListTile(
+                            leading: const Icon(Icons.person_add),
+                            title: const Text('Sign Up'),
                             trailing: const Icon(Icons.chevron_right),
-                            onTap: _navigateToSignIn, // Call the navigation function
+                            onTap: _navigateToSignUp,
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            leading: const Icon(Icons.login),
+                            title: const Text('Login'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _navigateToLogin,
                           ),
                           const Divider(height: 1),
                           ListTile(
@@ -459,8 +457,6 @@ class EditProfilePage extends StatefulWidget {
   final String? profilePicturePath;
   final Function(String?) onProfilePictureChanged;
   final String fullName;
-  final String currentLanguage;
-  final Function(String) onLanguageChanged;
 
   const EditProfilePage({
     Key? key,
@@ -468,8 +464,6 @@ class EditProfilePage extends StatefulWidget {
     required this.profilePicturePath,
     required this.onProfilePictureChanged,
     required this.fullName,
-    required this.currentLanguage,
-    required this.onLanguageChanged,
   }) : super(key: key);
 
   @override
@@ -486,7 +480,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _fullNameController;
   final BehaviorSubject<Map<String, dynamic>> _userProfileSubject =
   BehaviorSubject<Map<String, dynamic>>.seeded({});
-  late String _selectedLanguage;
 
   @override
   void initState() {
@@ -494,7 +487,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: widget.email);
     _profilePicturePath = widget.profilePicturePath;
     _fullNameController = TextEditingController(text: widget.fullName);
-    _selectedLanguage = widget.currentLanguage;
     _getUserID();
   }
 
@@ -520,21 +512,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
           'email': _emailController.text,
           'fullName': _fullNameController.text,
           'profilePicturePath': _profilePicturePath,
-          'language': _selectedLanguage, // Save the selected language
         });
         Map<String, String?> result = {
           'email': _emailController.text,
           'profilePicturePath': _profilePicturePath,
           'fullName': _fullNameController.text,
-          'language': _selectedLanguage,
         };
         _userProfileSubject.add({
           'email': _emailController.text,
           'fullName': _fullNameController.text,
           'profilePicturePath': _profilePicturePath,
-          'language': _selectedLanguage,
         });
-        widget.onLanguageChanged(_selectedLanguage); // Notify parent of language change
         Navigator.of(context).pop(result);
       } catch (e) {
         print("Error saving changes: $e");
@@ -562,8 +550,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         print('No image selected.');
       }
     } catch (e) {
-      print("Error picking image: $e");
-      if (context.mounted) {
+      print("Error picking image");
+          if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to pick image.'),
@@ -578,36 +566,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
     showModalBottomSheet(
       context: context,
       builder: (BuildContext context) {
-        return Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take Photo'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from Gallery'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              // Add some padding at the bottom to avoid navigation bar
+              SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+            ],
+          ),
         );
       },
+      // This ensures the bottom sheet appears above the navigation bar
+      isScrollControlled: true,
+      // This gives some elevation to make it stand out
+      elevation: 10,
+      // This adds some shape to the bottom sheet
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
     );
-  }
-
-  void _changeLanguage(String? newLanguage) {
-    if (newLanguage != null) {
-      setState(() {
-        _selectedLanguage = newLanguage;
-      });
-    }
   }
 
   @override
@@ -683,22 +675,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
               ),
-              const SizedBox(height: 12.0),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Language',
-                  border: OutlineInputBorder(),
-                ),
-                value: _selectedLanguage,
-                items: <String>['English', 'Malay', 'Chinese']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: _changeLanguage,
-              ),
               const SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: _saveChanges,
@@ -715,4 +691,3 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 }
-

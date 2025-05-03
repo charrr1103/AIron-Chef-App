@@ -3,12 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Import your SignUpPage.  Make sure the path is correct.
 import 'home.dart';
-import 'signup_page.dart'; // <--- Import the SignUpPage
-import 'login_page.dart'; // <--- Import the LoginPage
-import 'home.dart'; // Import your HomeScreen
+import 'signup_page.dart';
+import 'login_page.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -20,50 +17,47 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   bool isLastPage = false;
-  bool _hasSeenOnboarding = false; // Track if onboarding has been seen
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkOnboarding();
+    _checkAuthState();
   }
 
-  // Use SharedPreferences to check if the user has seen the onboarding screen
-  Future<void> _checkOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-    });
+  Future<void> _checkAuthState() async {
+    // Check if user is logged in
+    User? user = _auth.currentUser;
 
-    // If the user is logged in or has seen the onboarding, go to the main app screen
-    if (_hasSeenOnboarding || _auth.currentUser != null) {
+    if (user != null) {
+      // User is logged in, navigate to home screen
       _navigateToMainApp();
+    } else {
+      // User is not logged in, show onboarding
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  // Method to navigate to the main app screen (HomeScreen in your case)
   void _navigateToMainApp() {
-    // Use pushReplacement to avoid the user being able to go back to the onboarding screen
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) =>
-        const HomeScreen(), // Replace with your actual main app screen
+        builder: (context) => const HomeScreen(),
       ),
     );
   }
 
-  // Method to set the flag that the user has seen the onboarding screen
-  Future<void> _setOnboardingSeen() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('hasSeenOnboarding', true);
-  }
-
   @override
   Widget build(BuildContext context) {
-    // If the user has already seen the onboarding screen, don't show it again
-    if (_hasSeenOnboarding) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator())); //Or any other initial screen you want to show
+    // Show loading indicator while checking auth state
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
 
     return Scaffold(
@@ -248,8 +242,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      buildGlowingButton("Login", () async {
-                        await _setOnboardingSeen(); // set seen when login/signup
+                      buildGlowingButton("Login", () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -257,8 +250,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         );
                       }),
                       const SizedBox(width: 10),
-                      buildGradientButton("Sign Up", () async {
-                        await _setOnboardingSeen();  // set seen when login/signup
+                      buildGradientButton("Sign Up", () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -269,8 +261,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   )
                       : Column(
                     children: [
-                      buildGlowingButton("Login", () async {
-                        await _setOnboardingSeen(); // set seen when login/signup
+                      buildGlowingButton("Login", () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -278,8 +269,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         );
                       }),
                       const SizedBox(height: 10),
-                      buildGradientButton("Sign Up", () async {
-                        await _setOnboardingSeen(); // set seen when login/signup
+                      buildGradientButton("Sign Up", () {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
