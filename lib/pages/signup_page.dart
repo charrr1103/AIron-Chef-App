@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Cloud Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import './home.dart';
 import 'login_page.dart';
 
@@ -29,8 +29,9 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _confirmPasswordError;
 
   // Reference to the Firestore collection
-  final CollectionReference _usersCollection = FirebaseFirestore.instance.collection('users');
-  final FirebaseAuth _auth = FirebaseAuth.instance; // Add FirebaseAuth instance
+  final CollectionReference _usersCollection = FirebaseFirestore.instance
+      .collection('users');
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -45,14 +46,11 @@ class _SignUpPageState extends State<SignUpPage> {
               gradient: LinearGradient(
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
-                colors: [
-                  Color(0xFF004AAD),
-                  Color(0xFFCB6CE6),
-                ],
+                colors: [Color(0xFF004AAD), Color(0xFFCB6CE6)],
               ),
             ),
           ),
-          // Blurred white layer (glass effect)
+
           Positioned(
             top: size.height * 0.32,
             left: 0,
@@ -66,7 +64,10 @@ class _SignUpPageState extends State<SignUpPage> {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 30,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.4),
                     borderRadius: const BorderRadius.only(
@@ -110,7 +111,8 @@ class _SignUpPageState extends State<SignUpPage> {
                           errorText: _confirmPasswordError,
                           onToggle: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                         ),
@@ -119,7 +121,10 @@ class _SignUpPageState extends State<SignUpPage> {
                           onPressed: () => signUpUser(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF19006D),
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 25),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 25,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
@@ -133,13 +138,16 @@ class _SignUpPageState extends State<SignUpPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("Have an account? ", style: TextStyle(fontSize: 16)),
+                            const Text(
+                              "Have an account? ",
+                              style: TextStyle(fontSize: 16),
+                            ),
                             GestureDetector(
                               onTap: () {
                                 //  Navigate to login page.
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (context) => const LoginPage(), // Use the LoginPage
+                                    builder: (context) => const LoginPage(),
                                   ),
                                 );
                               },
@@ -160,12 +168,13 @@ class _SignUpPageState extends State<SignUpPage> {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => WillPopScope(
-                                  onWillPop: () async {
-                                    exit(0);
-                                  },
-                                  child: const HomeScreen(),
-                                ),
+                                builder:
+                                    (context) => WillPopScope(
+                                      onWillPop: () async {
+                                        exit(0);
+                                      },
+                                      child: const HomeScreen(),
+                                    ),
                               ),
                             );
                           },
@@ -216,11 +225,19 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.check_circle_outline, size: 50, color: Colors.white),
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 50,
+                        color: Colors.white,
+                      ),
                       SizedBox(height: 10),
                       Text(
                         'Account Created!',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       SizedBox(height: 5),
                       Text(
@@ -232,14 +249,11 @@ class _SignUpPageState extends State<SignUpPage> {
                 ),
               ),
             ),
-          // "Continue as Guest" positioned below the blurred area
-          // Removed this positioned widget
         ],
       ),
     );
   }
 
-  // Sign up function
   void signUpUser() async {
     setState(() {
       _emailError = null;
@@ -255,10 +269,11 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword( // Use the FirebaseAuth instance
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
 
       // Add user data to Firestore
       await _usersCollection.doc(userCredential.user!.uid).set({
@@ -266,7 +281,6 @@ class _SignUpPageState extends State<SignUpPage> {
         'fullName': _nameController.text.trim(),
         // Add other user data here as needed
       });
-
 
       print('User signed up: ${userCredential.user?.email}');
       setState(() {
@@ -280,12 +294,13 @@ class _SignUpPageState extends State<SignUpPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => WillPopScope(
-              onWillPop: () async {
-                exit(0);
-              },
-              child: const HomeScreen(),
-            ),
+            builder:
+                (context) => WillPopScope(
+                  onWillPop: () async {
+                    exit(0);
+                  },
+                  child: const HomeScreen(),
+                ),
           ),
         );
       });
@@ -311,7 +326,8 @@ class _SignUpPageState extends State<SignUpPage> {
       // Handle other potential errors, such as Firestore errors.
       print("Error saving to Firestore: $e");
       setState(() {
-        _emailError = 'An error occurred during sign up.'; // A more generic error for the user
+        _emailError =
+            'An error occurred during sign up.'; // A more generic error for the user
       });
     }
   }
@@ -334,15 +350,19 @@ class _SignUpPageState extends State<SignUpPage> {
             hintText: hintText,
             filled: true,
             fillColor: Colors.white.withOpacity(0.8),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            suffixIcon: isPasswordField
-                ? IconButton(
-              icon: Icon(
-                obscureText ? Icons.visibility_off : Icons.visibility,
-              ),
-              onPressed: onToggle,
-            )
-                : null,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 12,
+            ),
+            suffixIcon:
+                isPasswordField
+                    ? IconButton(
+                      icon: Icon(
+                        obscureText ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: onToggle,
+                    )
+                    : null,
             enabledBorder: OutlineInputBorder(
               borderSide: const BorderSide(color: Colors.grey),
               borderRadius: BorderRadius.circular(15),
@@ -370,4 +390,3 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
-

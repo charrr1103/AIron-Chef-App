@@ -1,18 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-/// A mini service that first tries Unsplash, then falls back to Pexels,
-/// and caches every successful URL in a Map.
 class IngredientImageService {
-  // In-memory cache: ingredientName → imageUrl
   final Map<String, String> _cache = {};
 
-  // Your Unsplash & Pexels keys
   static const _unsplashKey = 'BG_jaAJgeU7OwfFcInZyX0bO5OEov_kzVJfZYpHbqdE';
   static const _pexelsKey =
       'TQTYIy9DOfDqnuPd5x4s8iB0X5lAAttHIsHzWBGCO93Txud97Jd10zQH';
 
-  /// Public API: returns either a cached URL or does the fetch+cache.
   Future<String?> getImageUrl(String ingredient) async {
     final key = ingredient.toLowerCase().trim();
     if (_cache.containsKey(key)) {

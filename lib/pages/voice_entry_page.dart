@@ -93,30 +93,8 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
     );
   }
 
-  /// A file in the app documents dir where we store user-added ingredients.
-  Future<File> _userDictFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/ingredients_user.json');
-  }
-
-  /// Append [ingredient] to the user JSON if not already present.
-  Future<void> _appendToUserJson(String ingredient) async {
-    final file = await _userDictFile();
-    List<String> list = [];
-    if (await file.exists()) {
-      final txt = await file.readAsString();
-      list = List<String>.from(json.decode(txt));
-    }
-    if (!list.contains(ingredient)) {
-      list.add(ingredient);
-      await file.writeAsString(json.encode(list), flush: true);
-    }
-  }
-
   void _showMergeDialog() {
-    // Local set of items to merge
     final Set<String> toMerge = {};
-    // Controller for the merge-input field
     final TextEditingController controller = TextEditingController();
 
     showDialog(
@@ -137,7 +115,6 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // The merge-input TextField
                     TextField(
                       controller: controller,
                       decoration: const InputDecoration(
@@ -181,14 +158,11 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                // Insert the merged value back into your ingredients list
                 final merged = controller.text.trim();
                 if (merged.isNotEmpty) {
                   setState(() {
-                    // remove any of the original toMerge items
                     _ingredients.removeWhere((i) => toMerge.contains(i));
                     _selectedIngredients.removeAll(toMerge);
-                    // add the new merged value
                     _ingredients.add(merged);
                     _selectedIngredients.add(merged);
                   });
@@ -228,7 +202,7 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
       ),
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // stretch children
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child:
@@ -248,8 +222,7 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
                           final name = _ingredients[i];
                           final checked = _selectedIngredients.contains(name);
                           return Opacity(
-                            opacity:
-                                checked ? 1.0 : 0.5, // ◀️ full vs. half opacity
+                            opacity: checked ? 1.0 : 0.5,
                             child: Card(
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
@@ -266,9 +239,7 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
                                 value: checked,
                                 controlAffinity:
                                     ListTileControlAffinity.leading,
-                                activeColor: const Color(
-                                  0xFF6B4EFF,
-                                ), // your brand color when checked
+                                activeColor: const Color(0xFF6B4EFF),
                                 onChanged: (val) {
                                   setState(() {
                                     if (val == true) {
@@ -311,17 +282,16 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ── Mic button
+                    // Mic button
                     AvatarGlow(
                       animate: _isListening,
                       glowColor: const Color(0xFF6B4EFF),
                       child: GestureDetector(
-                        // 1) onPanStart = finger touches down
                         onPanStart: (_) {
                           setState(() {
                             _recognizedText = '';
                             _isListening = true;
-                            _isCancelled = false; // reset cancel flag
+                            _isCancelled = false;
                           });
                           _speech.listen(
                             onResult:
@@ -336,25 +306,18 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
                             ), // silence timeout
                             // live updates
                             listenOptions: stt.SpeechListenOptions(
-                              partialResults: true, // live updates
+                              partialResults: true,
                               cancelOnError: false,
-                              listenMode:
-                                  stt
-                                      .ListenMode
-                                      .dictation, // won’t stop on brief pause
+                              listenMode: stt.ListenMode.dictation,
                             ),
                           );
                         },
-                        // 2) onPanUpdate = finger moves
                         onPanUpdate: (details) {
-                          // if user drags up more than 50px from initial contact, mark cancel
                           if (details.localPosition.dy < -50 && !_isCancelled) {
                             setState(() => _isCancelled = true);
                           }
                         },
-                        // 3) onPanEnd = finger lifts
                         onPanEnd: (_) {
-                          // always stop listening
                           _speech.stop();
 
                           if (!_isCancelled && _recognizedText.isNotEmpty) {
@@ -441,7 +404,6 @@ class _VoiceEntryPageState extends State<VoiceEntryPage> {
             ),
 
             const SizedBox(height: 16),
-            // ── Confirm button, full‑width
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: SizedBox(

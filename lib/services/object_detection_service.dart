@@ -5,14 +5,13 @@ import 'package:ultralytics_yolo/yolo_result.dart';
 import 'package:ultralytics_yolo/yolo_task.dart';
 
 class ObjectDetectionService {
-  // ── singleton ───────────────────────────────────────────────
   static final ObjectDetectionService _instance =
       ObjectDetectionService._internal();
   factory ObjectDetectionService() => _instance;
   ObjectDetectionService._internal();
 
   YOLO? _yolo;
-  Future<void>? _loading; // holds an in‑flight load
+  Future<void>? _loading;
   static const double _confThreshold = 0.2;
 
   Future<void> _ensureLoaded() {
