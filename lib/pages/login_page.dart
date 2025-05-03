@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './home.dart';
+// Assuming you have a SignUpPage widget in a file named signup.dart
+import './signup_page.dart'; // Import the SignUpPage
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -300,6 +302,25 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.black87,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () {
+                            // Navigate to the SignUpPage
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SignUpPage()),
+                            );
+                            print("Sign Up button pressed");
+                          },
+                          child: const Text(
+                            'Don\'t have an account? Sign Up',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.blue,
                               decoration: TextDecoration.underline,
                             ),
                           ),

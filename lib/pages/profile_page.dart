@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rxdart/rxdart.dart';
+import './signup_page.dart'; // Import your LoginPage
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -51,6 +52,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _email = userData['email'] ?? '';
             _fullName = userData['fullName'] ?? '';
             _profilePicturePath = userData['profilePicturePath'];
+            _language = userData['language'] ?? 'English'; // Load language
           });
         } else {
           _userProfileSubject.add({});
@@ -58,6 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
             _email = '';
             _fullName = '';
             _profilePicturePath = null;
+            _language = 'English';
           });
         }
       } catch (e) {
@@ -75,6 +78,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _email = '';
           _fullName = '';
           _profilePicturePath = null;
+          _language = 'English';
         });
       }
     } else {
@@ -83,6 +87,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _email = '';
         _fullName = '';
         _profilePicturePath = null;
+        _language = 'English';
       });
     }
   }
@@ -97,10 +102,17 @@ class _ProfilePageState extends State<ProfilePage> {
             email: _email,
             profilePicturePath: _profilePicturePath,
             fullName: _fullName,
+            currentLanguage: _language, // Pass current language
             onProfilePictureChanged: (String? newPath) {
               setState(() {
                 _profilePicturePath = newPath;
               });
+            },
+            onLanguageChanged: (String newLanguage) {
+              setState(() {
+                _language = newLanguage;
+              });
+              _saveProfileData(language: newLanguage); // Save language on change
             },
           ),
         ),
@@ -111,11 +123,13 @@ class _ProfilePageState extends State<ProfilePage> {
           _email = result['email'] ?? _email;
           _profilePicturePath = result['profilePicturePath'];
           _fullName = result['fullName'] ?? _fullName;
+          _language = result['language'] ?? _language;
         });
         _userProfileSubject.add({
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
+          'language': _language,
         });
         _saveProfileData();
       }
@@ -131,7 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<void> _saveProfileData() async {
+  Future<void> _saveProfileData({String? language}) async {
     final user = _auth.currentUser;
     if (user != null) {
       final userId = user.uid;
@@ -140,11 +154,13 @@ class _ProfilePageState extends State<ProfilePage> {
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
+          'language': language ?? _language, // Save current or provided language
         });
         _userProfileSubject.add({
           'email': _email,
           'fullName': _fullName,
           'profilePicturePath': _profilePicturePath,
+          'language': language ?? _language,
         });
       } catch (e) {
         print("Error saving profile data: $e");
@@ -173,6 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 setState(() {
                   _language = 'English';
                 });
+                _saveProfileData(language: 'English');
                 Navigator.pop(context);
               },
             ),
@@ -182,6 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 setState(() {
                   _language = 'Malay';
                 });
+                _saveProfileData(language: 'Malay');
                 Navigator.pop(context);
               },
             ),
@@ -191,6 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 setState(() {
                   _language = 'Chinese';
                 });
+                _saveProfileData(language: 'Chinese');
                 Navigator.pop(context);
               },
             ),
@@ -209,6 +228,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _navigateToAbout() {
     print('Navigate to About');
+  }
+
+  void _navigateToSignIn() { // New function to navigate to sign-in
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SignUpPage()), // Use your LoginPage widget here
+    );
   }
 
   @override
@@ -377,6 +403,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             trailing: const Icon(Icons.chevron_right),
                             onTap: _navigateToAbout,
                           ),
+                          const Divider(height: 1),
+                          ListTile( // Add the new ListTile here
+                            leading: const Icon(Icons.login),
+                            title: const Text('Sign In'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _navigateToSignIn, // Call the navigation function
+                          ),
                         ],
                       ),
                     ),
@@ -396,6 +429,8 @@ class EditProfilePage extends StatefulWidget {
   final String? profilePicturePath;
   final Function(String?) onProfilePictureChanged;
   final String fullName;
+  final String currentLanguage;
+  final Function(String) onLanguageChanged;
 
   const EditProfilePage({
     Key? key,
@@ -403,6 +438,8 @@ class EditProfilePage extends StatefulWidget {
     required this.profilePicturePath,
     required this.onProfilePictureChanged,
     required this.fullName,
+    required this.currentLanguage,
+    required this.onLanguageChanged,
   }) : super(key: key);
 
   @override
@@ -419,6 +456,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _fullNameController;
   final BehaviorSubject<Map<String, dynamic>> _userProfileSubject =
   BehaviorSubject<Map<String, dynamic>>.seeded({});
+  late String _selectedLanguage;
 
   @override
   void initState() {
@@ -426,6 +464,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _emailController = TextEditingController(text: widget.email);
     _profilePicturePath = widget.profilePicturePath;
     _fullNameController = TextEditingController(text: widget.fullName);
+    _selectedLanguage = widget.currentLanguage;
     _getUserID();
   }
 
@@ -451,17 +490,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
           'email': _emailController.text,
           'fullName': _fullNameController.text,
           'profilePicturePath': _profilePicturePath,
+          'language': _selectedLanguage, // Save the selected language
         });
         Map<String, String?> result = {
           'email': _emailController.text,
           'profilePicturePath': _profilePicturePath,
           'fullName': _fullNameController.text,
+          'language': _selectedLanguage,
         };
         _userProfileSubject.add({
           'email': _emailController.text,
           'fullName': _fullNameController.text,
           'profilePicturePath': _profilePicturePath,
+          'language': _selectedLanguage,
         });
+        widget.onLanguageChanged(_selectedLanguage); // Notify parent of language change
         Navigator.of(context).pop(result);
       } catch (e) {
         print("Error saving changes: $e");
@@ -527,6 +570,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
       },
     );
+  }
+
+  void _changeLanguage(String? newLanguage) {
+    if (newLanguage != null) {
+      setState(() {
+        _selectedLanguage = newLanguage;
+      });
+    }
   }
 
   @override
@@ -601,6 +652,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 12.0),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Language',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedLanguage,
+                items: <String>['English', 'Malay', 'Chinese']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: _changeLanguage,
               ),
               const SizedBox(height: 20.0),
               ElevatedButton(
