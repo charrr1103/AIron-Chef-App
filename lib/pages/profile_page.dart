@@ -7,7 +7,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:airon_chef/pages/onboarding_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './signup_page.dart';
-import './login_page.dart'; // Import the login page
+import './login_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -585,17 +585,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   _pickImage(ImageSource.gallery);
                 },
               ),
-              // Add some padding at the bottom to avoid navigation bar
               SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
             ],
           ),
         );
       },
-      // This ensures the bottom sheet appears above the navigation bar
       isScrollControlled: true,
-      // This gives some elevation to make it stand out
       elevation: 10,
-      // This adds some shape to the bottom sheet
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
