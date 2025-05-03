@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rxdart/rxdart.dart';
-import './signup_page.dart'; // Import your LoginPage
+import './onboarding_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -233,8 +233,31 @@ class _ProfilePageState extends State<ProfilePage> {
   void _navigateToSignIn() { // New function to navigate to sign-in
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SignUpPage()), // Use your LoginPage widget here
+      MaterialPageRoute(builder: (context) => const OnboardingScreen()), // Use your OnboardingScreen widget here
     );
+  }
+
+  void _signOut() async {
+    try {
+      await _auth.signOut();
+      if (context.mounted) {
+        // Use pushReplacement to avoid going back to the ProfilePage.
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      }
+    } catch (e) {
+      print("Error signing out: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to sign out. Please try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -409,6 +432,13 @@ class _ProfilePageState extends State<ProfilePage> {
                             title: const Text('Sign In'),
                             trailing: const Icon(Icons.chevron_right),
                             onTap: _navigateToSignIn, // Call the navigation function
+                          ),
+                          const Divider(height: 1),
+                          ListTile(
+                            leading: const Icon(Icons.logout),
+                            title: const Text('Logout'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: _signOut,
                           ),
                         ],
                       ),
