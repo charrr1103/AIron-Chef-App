@@ -455,26 +455,81 @@ class _PantryPageState extends State<PantryPage> {
                           children: [
                             Row(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline),
-                                  onPressed: () async {
-                                    final updatedItem = pantryItems[index]
-                                        .copyWith(
-                                          quantity:
-                                              pantryItems[index].quantity - 1,
-                                          updatedAt:
-                                              DateTime.now()
-                                                  .millisecondsSinceEpoch,
-                                        );
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline),
+                                onPressed: () async {
+                                  final currentQty = pantryItems[index].quantity;
 
-                                    setState(() {
-                                      pantryItems[index] = updatedItem;
-                                    });
+                                  if (currentQty <= 1) { //ensure no negative quantity
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => Dialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Text(
+                                                'Remove Ingredient',
+                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              const Text(
+                                                'Quantity is 1. Do you want to remove this ingredient from your pantry?',
+                                              ),
+                                              const SizedBox(height: 24),
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
+                                                children: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  ElevatedButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.red,
+                                                      foregroundColor: Colors.white,
+                                                    ),
+                                                    child: const Text('Remove'),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
 
-                                    await DatabaseHelper.instance
-                                        .insertPantryItem(updatedItem);
-                                  },
-                                ),
+                                    if (confirm == true) {
+                                      await DatabaseHelper.instance.deleteIngredient(pantryItems[index].name);
+                                      await _loadPantryItems();
+                                    }
+
+                                    return;
+                                  }
+
+                                  // normal quantity decrement
+                                  final updatedItem = pantryItems[index].copyWith(
+                                    quantity: currentQty - 1,
+                                    updatedAt: DateTime.now().millisecondsSinceEpoch,
+                                  );
+
+                                  setState(() {
+                                    pantryItems[index] = updatedItem;
+                                  });
+
+                                  await DatabaseHelper.instance.insertPantryItem(updatedItem);
+                                },
+                              ),
                                 Text(
                                   item.quantity.toString(),
                                   style: const TextStyle(
