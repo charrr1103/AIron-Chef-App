@@ -46,7 +46,7 @@ class _CategoryRecipesPageState extends State<CategoryRecipesPage> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200 &&
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore) {
       _loadMoreRecipes();
     }
@@ -54,7 +54,6 @@ class _CategoryRecipesPageState extends State<CategoryRecipesPage> {
 
   Future<void> _loadMoreRecipes() async {
     setState(() => _isLoadingMore = true);
-    // TODO: Implement pagination
     setState(() => _isLoadingMore = false);
   }
 
@@ -180,4 +179,4 @@ class _CategoryRecipesPageState extends State<CategoryRecipesPage> {
       ),
     );
   }
-} 
+}

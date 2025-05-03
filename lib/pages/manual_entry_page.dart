@@ -45,7 +45,7 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
         .toList();
   }
 
-  /// Show “add new” only when there's a query but no matches
+  /// Show “add new” when there's a query but no matches
   bool get _showAddNew =>
       _searchController.text.trim().isNotEmpty && _matchesItems.isEmpty;
 
@@ -78,7 +78,6 @@ class _ManualEntryPageState extends State<ManualEntryPage> {
       ),
     );
     if (result != null) {
-      // Navigator.pop(context, result);
       await _loadPantryData();
       _searchController.clear();
       Navigator.pop(context, result);

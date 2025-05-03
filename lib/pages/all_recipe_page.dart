@@ -102,7 +102,7 @@ class _AllRecipePageState extends State<AllRecipePage> {
 
   Future<void> _loadRecipes() async {
     final provider = Provider.of<RecipeProvider>(context, listen: false);
-    
+
     if (categories.isEmpty) {
       // Load all recipes if pantry is empty
       await provider.fetchRecipesForIngredient(
@@ -141,7 +141,7 @@ class _AllRecipePageState extends State<AllRecipePage> {
       // Set the filter in the provider
       final provider = Provider.of<RecipeProvider>(context, listen: false);
       provider.setFilter(_filter);
-      
+
       // Force refresh with new filters
       if (provider.isSearching) {
         await provider.fetchRecipesForIngredient(
@@ -235,7 +235,7 @@ class _AllRecipePageState extends State<AllRecipePage> {
           ),
         ),
         SizedBox(
-          height: 180, // Increased height to accommodate title
+          height: 180,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -387,19 +387,21 @@ class _AllRecipePageState extends State<AllRecipePage> {
                             borderRadius: BorderRadius.circular(30),
                             borderSide: BorderSide.none,
                           ),
-                          prefixIcon: provider.isSearching
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    provider.setSearchState('', false);
-                                    _loadRecipes();
-                                  },
-                                )
-                              : null,
+                          prefixIcon:
+                              provider.isSearching
+                                  ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      provider.setSearchState('', false);
+                                      _loadRecipes();
+                                    },
+                                  )
+                                  : null,
                           suffixIcon: IconButton(
                             icon: const Icon(Icons.search),
-                            onPressed: () => _performSearch(_searchController.text),
+                            onPressed:
+                                () => _performSearch(_searchController.text),
                           ),
                         ),
                         onSubmitted: _performSearch,
@@ -422,50 +424,65 @@ class _AllRecipePageState extends State<AllRecipePage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: provider.isSearching
-                    ? Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: GridView.builder(
-                          itemCount: provider.getRecipesForIngredient(provider.searchQuery).length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 3 / 4,
-                          ),
-                          itemBuilder: (context, index) {
-                            final recipe = provider.getRecipesForIngredient(provider.searchQuery)[index];
-                            return _buildRecipeCard(recipe);
-                          },
-                        ),
-                      )
-                    : categories.isNotEmpty
-                        ? ListView.builder(
-                            itemCount: categories.length,
+                child:
+                    provider.isSearching
+                        ? Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: GridView.builder(
+                            itemCount:
+                                provider
+                                    .getRecipesForIngredient(
+                                      provider.searchQuery,
+                                    )
+                                    .length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: 16,
+                                  childAspectRatio: 3 / 4,
+                                ),
                             itemBuilder: (context, index) {
-                              final category = categories[index];
-                              return _buildCategorySection(
-                                category,
-                                provider.getCategoryRecipes(category),
-                              );
+                              final recipe =
+                                  provider.getRecipesForIngredient(
+                                    provider.searchQuery,
+                                  )[index];
+                              return _buildRecipeCard(recipe);
                             },
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: GridView.builder(
-                              itemCount: provider.getRecipesForIngredient('all').length,
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: 16,
-                                crossAxisSpacing: 16,
-                                childAspectRatio: 3 / 4,
-                              ),
-                              itemBuilder: (context, index) {
-                                final recipe = provider.getRecipesForIngredient('all')[index];
-                                return _buildRecipeCard(recipe);
-                              },
-                            ),
                           ),
+                        )
+                        : categories.isNotEmpty
+                        ? ListView.builder(
+                          itemCount: categories.length,
+                          itemBuilder: (context, index) {
+                            final category = categories[index];
+                            return _buildCategorySection(
+                              category,
+                              provider.getCategoryRecipes(category),
+                            );
+                          },
+                        )
+                        : Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: GridView.builder(
+                            itemCount:
+                                provider.getRecipesForIngredient('all').length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  mainAxisSpacing: 16,
+                                  crossAxisSpacing: 16,
+                                  childAspectRatio: 3 / 4,
+                                ),
+                            itemBuilder: (context, index) {
+                              final recipe =
+                                  provider.getRecipesForIngredient(
+                                    'all',
+                                  )[index];
+                              return _buildRecipeCard(recipe);
+                            },
+                          ),
+                        ),
               ),
             ],
           );

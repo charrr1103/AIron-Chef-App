@@ -130,7 +130,6 @@ class _ManualEntryFormState extends State<ManualEntryForm> {
       body: Column(
         children: [
           const SizedBox(height: 16),
-          // ——— “Text Input” pill ————————————————————————
           Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -151,7 +150,6 @@ class _ManualEntryFormState extends State<ManualEntryForm> {
           ),
           const SizedBox(height: 24),
 
-          // ——— The white card with form fields ——————————————
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
