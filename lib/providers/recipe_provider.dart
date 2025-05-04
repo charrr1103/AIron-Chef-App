@@ -87,6 +87,33 @@ class RecipeProvider extends ChangeNotifier {
   void setFilter(RecipeFilter filter) {
     _currentFilter = filter;
     notifyListeners();
+
+    // Get the current active categories or search query
+    if (_isSearching) {
+      // If searching, fetch with search query and all filters
+      fetchRecipesForIngredient(
+        _searchQuery,
+        filters: filter.toQueryParameters(),
+        refresh: true,
+      );
+    } else if (_categoryRecipes.isNotEmpty) {
+      // If showing categories, fetch all categories with combined filters
+      final combinedFilters = filter.toQueryParameters();
+      for (final category in _categoryRecipes.keys) {
+        fetchCategoryRecipes(
+          category,
+          filters: combinedFilters,
+          refresh: true,
+        );
+      }
+    } else {
+      // If showing all recipes, fetch with all filters
+      fetchRecipesForIngredient(
+        'all',
+        filters: filter.toQueryParameters(),
+        refresh: true,
+      );
+    }
   }
 
   bool isLoadingIngredient(String ingredient) => 
@@ -130,7 +157,6 @@ class RecipeProvider extends ChangeNotifier {
     Map<String, dynamic> filters = const {},
     bool refresh = false,
   }) async {
-    // Return cached data if it's valid and not refreshing
     if (!refresh && _categoryRecipes.containsKey(category) && _isCacheValid(category)) {
       return;
     }
@@ -142,9 +168,8 @@ class RecipeProvider extends ChangeNotifier {
     try {
       final queryParams = {
         'query': category,
-        'number': '3',
+        'number': '4',
         ...filters,
-        'addRecipeInformation': 'true',
       };
 
       bool allKeysExceeded = true;
@@ -179,7 +204,6 @@ class RecipeProvider extends ChangeNotifier {
     Map<String, dynamic> filters = const {},
     bool refresh = false,
   }) async {
-    // Return cached data if it's valid and not refreshing
     if (!refresh && _recipesByIngredient.containsKey(ingredient) && _isCacheValid(ingredient)) {
       return;
     }
@@ -191,7 +215,7 @@ class RecipeProvider extends ChangeNotifier {
     try {
       final queryParams = {
         'query': ingredient,
-        'number': '10',
+        'number': '20',
         ...filters,
         'addRecipeInformation': 'true',
       };
