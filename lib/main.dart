@@ -6,6 +6,8 @@ import 'package:airon_chef/services/object_detection_service.dart';
 import 'package:ultralytics_yolo/yolo.dart';
 import 'package:airon_chef/providers/recipe_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:airon_chef/pages/home.dart';
 
 // Future<void> _seedTestData() async {
 //   final db = DatabaseHelper.instance;
@@ -54,7 +56,7 @@ void main() async {
   await ObjectDetectionService().loadModel();
   // await _seedTestData();
 
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -112,12 +114,23 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        // User is already signed in
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        // Not signed in
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
