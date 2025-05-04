@@ -380,16 +380,33 @@ class _PantryPageState extends State<PantryPage> {
                   ),
                   const SizedBox(height: 16),
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: pantryItems.length,
-                      itemBuilder: (context, index) {
-                        final item = pantryItems[index];
-                        final isExpiringSoon =
-                            item.expiryDate != null &&
-                            item.expiryDate!
-                                    .difference(DateTime.now())
-                                    .inDays <=
-                                3;
+                     child: pantryItems.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.inbox, size: 80, color: Colors.grey),
+                              SizedBox(height: 12),
+                              Text(
+                                'No pantry items yet.',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                        itemCount: pantryItems.length,
+                        itemBuilder: (context, index) {
+                          final item = pantryItems[index];
+                          final isExpiringSoon =
+                              item.expiryDate != null &&
+                              item.expiryDate!
+                                      .difference(DateTime.now())
+                                      .inDays <=3;
                         //calculate the item expire date
                         final daysLeft =
                             item.expiryDate?.difference(DateTime.now()).inDays;

@@ -402,11 +402,40 @@ class _RecipePageState extends State<RecipePage> {
                       children: [
                         Stack(
                           children: [
-                            Image.network(
-                              recipe!.image,
+                            Container(
                               width: double.infinity,
                               height: 250,
-                              fit: BoxFit.cover,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                              ),
+                              child: Image.network(
+                                recipe!.image,
+                                width: double.infinity,
+                                height: 250,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.image_not_supported,
+                                          size: 60,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'No Image Available',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                             Positioned(
                               bottom: 0,

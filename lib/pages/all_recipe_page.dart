@@ -75,6 +75,10 @@ class _AllRecipePageState extends State<AllRecipePage> {
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     final provider = Provider.of<RecipeProvider>(context, listen: false);
     provider.setSearchState(query, true);
     _searchController.text = query;
@@ -86,7 +90,9 @@ class _AllRecipePageState extends State<AllRecipePage> {
     );
 
     if (mounted) {
-      setState(() {});
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -95,12 +101,12 @@ class _AllRecipePageState extends State<AllRecipePage> {
     final pantryItems = await DatabaseHelper.instance.getAllPantryItems();
     setState(() {
       categories = pantryItems.map((item) => item.name).toList();
-      _isLoading = false;
     });
     await _loadRecipes();
   }
 
   Future<void> _loadRecipes() async {
+    setState(() => _isLoading = true);
     final provider = Provider.of<RecipeProvider>(context, listen: false);
 
     if (categories.isEmpty) {
@@ -122,7 +128,9 @@ class _AllRecipePageState extends State<AllRecipePage> {
     }
     // Save the state after loading recipes
     if (mounted) {
-      setState(() {});
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -137,6 +145,7 @@ class _AllRecipePageState extends State<AllRecipePage> {
     if (result != null) {
       setState(() {
         _filter = result;
+        _isLoading = true;
       });
       // Set the filter in the provider
       final provider = Provider.of<RecipeProvider>(context, listen: false);
@@ -151,6 +160,12 @@ class _AllRecipePageState extends State<AllRecipePage> {
         );
       } else {
         await _loadRecipes();
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -185,11 +200,39 @@ class _AllRecipePageState extends State<AllRecipePage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            child: Image.network(
-              recipe['image'],
-              fit: BoxFit.cover,
+            child: Container(
               height: 120,
               width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Image.network(
+                recipe['image'],
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported,
+                          size: 40,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'No Image Available',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
           Expanded(
@@ -424,65 +467,84 @@ class _AllRecipePageState extends State<AllRecipePage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child:
-                    provider.isSearching
-                        ? Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: GridView.builder(
-                            itemCount:
-                                provider
-                                    .getRecipesForIngredient(
-                                      provider.searchQuery,
-                                    )
-                                    .length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 16,
-                                  crossAxisSpacing: 16,
-                                  childAspectRatio: 3 / 4,
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
+                    : provider.isSearching
+                        ? provider.getRecipesForIngredient(provider.searchQuery).isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.search_off,
+                                      size: 60,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No Results Found',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Try a different search term',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey[500],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                            itemBuilder: (context, index) {
-                              final recipe =
-                                  provider.getRecipesForIngredient(
-                                    provider.searchQuery,
-                                  )[index];
-                              return _buildRecipeCard(recipe);
-                            },
-                          ),
-                        )
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: GridView.builder(
+                                  itemCount: provider.getRecipesForIngredient(provider.searchQuery).length,
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 16,
+                                    crossAxisSpacing: 16,
+                                    childAspectRatio: 3 / 4,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final recipe = provider.getRecipesForIngredient(provider.searchQuery)[index];
+                                    return _buildRecipeCard(recipe);
+                                  },
+                                ),
+                              )
                         : categories.isNotEmpty
-                        ? ListView.builder(
-                          itemCount: categories.length,
-                          itemBuilder: (context, index) {
-                            final category = categories[index];
-                            return _buildCategorySection(
-                              category,
-                              provider.getCategoryRecipes(category),
-                            );
-                          },
-                        )
-                        : Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: GridView.builder(
-                            itemCount:
-                                provider.getRecipesForIngredient('all').length,
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  mainAxisSpacing: 16,
-                                  crossAxisSpacing: 16,
-                                  childAspectRatio: 3 / 4,
+                            ? ListView.builder(
+                                itemCount: categories.length,
+                                itemBuilder: (context, index) {
+                                  final category = categories[index];
+                                  return _buildCategorySection(
+                                    category,
+                                    provider.getCategoryRecipes(category),
+                                  );
+                                },
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: GridView.builder(
+                                  itemCount: provider.getRecipesForIngredient('all').length,
+                                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    mainAxisSpacing: 16,
+                                    crossAxisSpacing: 16,
+                                    childAspectRatio: 3 / 4,
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final recipe = provider.getRecipesForIngredient('all')[index];
+                                    return _buildRecipeCard(recipe);
+                                  },
                                 ),
-                            itemBuilder: (context, index) {
-                              final recipe =
-                                  provider.getRecipesForIngredient(
-                                    'all',
-                                  )[index];
-                              return _buildRecipeCard(recipe);
-                            },
-                          ),
-                        ),
+                              ),
               ),
             ],
           );
