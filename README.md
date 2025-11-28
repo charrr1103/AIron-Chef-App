@@ -3,6 +3,8 @@
 AIron Chef is a Flutter-based mobile application designed to help users decide what to cook based on the ingredients they already have. By combining image recognition, voice input, manual entry, and smart recipe recommendations, AIron Chef reduces decision fatigue and minimizes food waste — making cooking easier, smarter, and more enjoyable.
 
 ---
+**AIron Chef System Design**
+![AIron Chef System Design](AIron Chef System Design.jpg)
 
 ## 📌 Overview
 
