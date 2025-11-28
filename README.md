@@ -1,14 +1,13 @@
-- Splash Screen (Completed)
-- App Icon (Completed)
-- Onboarding Screens (Completed)
-- Home Page (Completed)
-  - Image Entry (Completed)
-  - Voice Entry (Completed)
+- Splash Screen 
+- App Icon 
+- Onboarding Screens 
+- Home Page
+  - Image Entry 
+  - Voice Entry 
   - Manual Entry 
-- main.dart (line 66-69): temporary disable the tutorial splash screen because of user login
-- Recipe Page (recipes_page) (Completed)
-- Pantry Page (pantry_page) (Completed)
-- User profile (developing)
-- User Login (done can login)
-- User Sign Up (done can register)
-- Shopping List Page (shopping_list_page) (Completed)
+- Recipe Page (recipes_page)
+- Pantry Page (pantry_page) 
+- User profile
+- User Login 
+- User Sign Up 
+- Shopping List Page (shopping_list_page) 
