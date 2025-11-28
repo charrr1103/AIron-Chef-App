@@ -4,7 +4,7 @@ AIron Chef is a Flutter-based mobile application designed to help users decide w
 
 ---
 **AIron Chef System Design**
-![AIron Chef System Design](AIron Chef System Design.jpg)
+![AIron Chef System Design](diagram/AIron Chef System Design.jpg)
 
 ## 📌 Overview
 
