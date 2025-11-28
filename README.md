@@ -153,4 +153,15 @@ AIron Chef integrates multiple technologies:
 ### **Dev Tools**
 - Android Studio  
 - Flutter SDK  
-- Firebase Console  
+- Firebase Console
+
+---
+
+- ## 👥 Group Members (Group 22 – Foodgranpapaya)
+
+| Name | Student ID | Role |
+|------|------------|------|
+| **Charmaine Hooi Wai Yee** | 2104533 | Developer |
+| **Lee Jia Yu** | 2105012 | Developer |
+| **Ling Ji Xiang** | 2104584 | Developer |
+| **Ling Zheng Hong** | 2104468 | Developer |
